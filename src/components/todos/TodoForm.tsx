@@ -21,7 +21,7 @@ export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void })
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-black/10 p-3 dark:border-white/10"
+      className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-border-subtle p-3"
     >
       <input
         type="text"
@@ -29,13 +29,13 @@ export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void })
         onChange={(e) => setTitle(e.target.value)}
         placeholder="할 일을 입력하고 Enter"
         aria-label="할 일 제목"
-        className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-foreground/40"
+        className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-text-tertiary"
       />
       <select
         value={priority}
         onChange={(e) => setPriority(e.target.value as Priority)}
         aria-label="우선순위"
-        className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+        className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
       >
         {(Object.keys(PRIORITY_LABEL) as Priority[]).map((p) => (
           <option key={p} value={p} className="bg-background">
@@ -48,12 +48,12 @@ export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void })
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
         aria-label="마감일"
-        className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+        className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
       />
       <button
         type="submit"
         disabled={!title.trim()}
-        className="rounded-md bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
+        className="rounded bg-accent px-4 py-1.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-accent/90 disabled:opacity-40"
       >
         추가
       </button>

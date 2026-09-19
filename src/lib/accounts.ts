@@ -1,75 +1,113 @@
-// 사용자가 등록해둔 내 계좌 관리 데이터 계층.
-// 지금은 정보 정리용이고, 나중에 bankapi.co.kr 같은 자동 동기화를 붙이면
-// 이 목록이 "어떤 계좌를 동기화할지" 기준이 된다.
+// 사용자가 등록해둔 내 계좌 관리 데이터 계층 (Supabase tb_accounts 테이블).
+// RLS가 created_by = auth.uid() 조건으로 걸려 있어, 로그인한 사용자 본인 행만 오간다.
 
-import { BANKS } from "./budget";
+import { supabase } from "./supabase/client";
 
 export type Account = {
-  id: string;
+  id: number;
   bank: string;
+  last4: string | null;
+  holderName: string | null;
   alias: string;
-  last4: string; // 계좌번호 뒷자리(선택), 식별용
-  memo: string;
+  sortOrder: number;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type NewAccount = {
   bank: string;
   alias: string;
   last4?: string;
-  memo?: string;
 };
 
-const STORAGE_KEY = "lifelog:accounts";
+type AccountRow = {
+  id: number;
+  bank: string;
+  last4: string | null;
+  holder_name: string | null;
+  alias: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
 
-function normalize(raw: unknown): Account | null {
-  if (!raw || typeof raw !== "object") return null;
-  const a = raw as Record<string, unknown>;
-  if (typeof a.id !== "string") return null;
-  const bank = typeof a.bank === "string" ? a.bank : BANKS[0];
+const SELECT_COLUMNS =
+  "id, bank, last4, holder_name, alias, sort_order, created_at, updated_at";
+
+function toAccount(row: AccountRow): Account {
   return {
-    id: a.id,
-    bank,
-    alias: typeof a.alias === "string" && a.alias.trim() ? a.alias : bank,
-    last4: typeof a.last4 === "string" ? a.last4 : "",
-    memo: typeof a.memo === "string" ? a.memo : "",
-    createdAt:
-      typeof a.createdAt === "string" ? a.createdAt : new Date().toISOString(),
+    id: row.id,
+    bank: row.bank,
+    last4: row.last4,
+    holderName: row.holder_name,
+    alias: row.alias,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-export function loadAccounts(): Account[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(normalize).filter((a): a is Account => a !== null);
-  } catch {
-    return [];
-  }
+export async function fetchAccounts(): Promise<Account[]> {
+  const { data, error } = await supabase
+    .from("tb_accounts")
+    .select(SELECT_COLUMNS)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(toAccount);
 }
 
-export function saveAccounts(accounts: Account[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
-  } catch {
-    // 저장 실패는 조용히 무시한다.
-  }
+export async function insertAccount(
+  input: NewAccount,
+  sortOrder: number
+): Promise<Account> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("로그인이 필요해요.");
+
+  const { data, error } = await supabase
+    .from("tb_accounts")
+    .insert({
+      bank: input.bank,
+      alias: input.alias.trim() || input.bank,
+      last4: input.last4 || null,
+      sort_order: sortOrder,
+      created_by: userData.user.id,
+    })
+    .select(SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toAccount(data);
 }
 
-export function createAccount(input: NewAccount): Account {
-  return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    bank: input.bank,
-    alias: input.alias.trim() || input.bank,
-    last4: (input.last4 ?? "").replace(/\D/g, "").slice(-4),
-    memo: input.memo?.trim() ?? "",
-    createdAt: new Date().toISOString(),
-  };
+export async function updateAccountRow(
+  id: number,
+  patch: Partial<Pick<Account, "bank" | "alias" | "last4">>
+): Promise<Account> {
+  const { data, error } = await supabase
+    .from("tb_accounts")
+    .update({
+      ...(patch.bank !== undefined ? { bank: patch.bank } : {}),
+      ...(patch.alias !== undefined ? { alias: patch.alias } : {}),
+      ...(patch.last4 !== undefined ? { last4: patch.last4 || null } : {}),
+    })
+    .eq("id", id)
+    .select(SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toAccount(data);
+}
+
+export async function deleteAccountRow(id: number): Promise<void> {
+  const { error } = await supabase.from("tb_accounts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장한다. */
+export async function persistAccountOrder(orderedIds: number[]): Promise<void> {
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from("tb_accounts").update({ sort_order: index }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }

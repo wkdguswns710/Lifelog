@@ -36,8 +36,8 @@ export default function ThemeToggle({
       title={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
       className={
         compact
-          ? "flex size-9 items-center justify-center rounded-md text-base text-foreground/70 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-          : "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground/70 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          ? "flex size-9 items-center justify-center rounded text-base text-text-secondary transition-colors duration-300 hover:bg-surface-alt"
+          : "flex w-full items-center gap-3 rounded px-3 py-2 text-sm text-text-secondary transition-colors duration-300 hover:bg-surface-alt"
       }
     >
       {/* 마운트 전에는 아이콘을 숨겨 서버/클라이언트 렌더 불일치를 피한다. */}

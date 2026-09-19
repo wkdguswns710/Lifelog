@@ -15,8 +15,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export default function TodoApp() {
-  const { todos, loaded, add, toggle, update, remove, clearCompleted } =
-    useTodos();
+  const { todos, loaded, add, toggle, update, remove, clearCompleted } = useTodos();
   const [filter, setFilter] = useState<Filter>("all");
 
   const remaining = todos.filter((t) => !t.done).length;
@@ -40,23 +39,23 @@ export default function TodoApp() {
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+              className={`rounded px-3 py-1 text-sm transition-colors duration-300 ${
                 filter === f.key
-                  ? "bg-foreground text-background font-medium"
-                  : "text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+                  ? "bg-surface-alt font-medium text-foreground"
+                  : "text-text-secondary hover:bg-surface-alt"
               }`}
             >
               {f.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3 text-xs text-foreground/50">
+        <div className="flex items-center gap-3 text-xs text-text-tertiary">
           <span>남은 일 {remaining}개</span>
           {doneCount > 0 && (
             <button
               type="button"
               onClick={clearCompleted}
-              className="rounded px-2 py-1 hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+              className="rounded px-2 py-1 hover:bg-surface-alt hover:text-foreground"
             >
               완료 {doneCount}개 지우기
             </button>
@@ -65,11 +64,11 @@ export default function TodoApp() {
       </div>
 
       {!loaded ? (
-        <p className="py-10 text-center text-sm text-foreground/40">
+        <p className="py-10 text-center text-sm text-text-tertiary">
           불러오는 중…
         </p>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-black/15 py-12 text-center text-sm text-foreground/50 dark:border-white/15">
+        <div className="rounded-xl border border-dashed border-border-strong py-12 text-center text-sm text-text-tertiary">
           {todos.length === 0
             ? "아직 할 일이 없어요. 위에서 하나 추가해보세요."
             : filter === "done"

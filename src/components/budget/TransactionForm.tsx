@@ -1,26 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  BANKS,
   CATEGORIES,
   TX_TYPE_LABEL,
   todayStr,
   type NewTransaction,
   type TxType,
 } from "@/lib/budget";
+import type { Account } from "@/lib/accounts";
 
 export default function TransactionForm({
+  accounts,
   onAdd,
 }: {
+  accounts: Account[];
   onAdd: (input: NewTransaction) => void;
 }) {
   const [type, setType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES.expense[0]);
-  const [bank, setBank] = useState(BANKS[0]);
+  const [accountId, setAccountId] = useState<number | "">(
+    accounts[0]?.id ?? ""
+  );
   const [spentAt, setSpentAt] = useState(todayStr());
   const [memo, setMemo] = useState("");
+
+  useEffect(() => {
+    if (accountId === "" && accounts.length > 0) {
+      setAccountId(accounts[0].id);
+    }
+  }, [accounts, accountId]);
 
   function selectType(next: TxType) {
     setType(next);
@@ -31,30 +41,40 @@ export default function TransactionForm({
     e.preventDefault();
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) return;
-    onAdd({ type, amount: value, category, bank, memo, spentAt });
+    if (!accountId) return;
+    onAdd({ accountId, type, amount: value, category, memo, spentAt });
     setAmount("");
     setMemo("");
     setSpentAt(todayStr());
   }
 
+  if (accounts.length === 0) {
+    return (
+      <div className="mb-6 rounded-xl border border-dashed border-border-strong p-4 text-center text-sm text-text-tertiary">
+        거래를 기록하려면 먼저 계좌를 등록해주세요. 🏦 버튼으로 계좌를 추가할
+        수 있어요.
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 rounded-xl border border-black/10 p-4 dark:border-white/10"
+      className="mb-6 rounded-xl border border-border-subtle p-4"
     >
       {/* 수입/지출 토글 */}
-      <div className="mb-3 inline-flex rounded-lg border border-black/10 p-0.5 dark:border-white/15">
+      <div className="mb-3 inline-flex rounded border border-border-subtle p-0.5">
         {(["expense", "income"] as TxType[]).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => selectType(t)}
-            className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+            className={`rounded px-4 py-1.5 text-sm transition-colors duration-300 ${
               type === t
                 ? t === "income"
                   ? "bg-emerald-500 font-medium text-white"
                   : "bg-rose-500 font-medium text-white"
-                : "text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+                : "text-text-secondary hover:bg-surface-alt"
             }`}
           >
             {TX_TYPE_LABEL[t]}
@@ -64,7 +84,7 @@ export default function TransactionForm({
 
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-foreground/50">금액</span>
+          <span className="text-xs text-text-tertiary">금액</span>
           <input
             type="number"
             inputMode="numeric"
@@ -74,17 +94,17 @@ export default function TransactionForm({
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
             aria-label="금액"
-            className="w-32 rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-right text-sm outline-none dark:border-white/15"
+            className="w-32 rounded border border-border-subtle bg-transparent px-2 py-1.5 text-right text-sm outline-none"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-foreground/50">분류</span>
+          <span className="text-xs text-text-tertiary">분류</span>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             aria-label="분류"
-            className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+            className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
           >
             {CATEGORIES[type].map((c) => (
               <option key={c} value={c} className="bg-background">
@@ -95,48 +115,48 @@ export default function TransactionForm({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-foreground/50">은행</span>
+          <span className="text-xs text-text-tertiary">계좌</span>
           <select
-            value={bank}
-            onChange={(e) => setBank(e.target.value)}
-            aria-label="은행"
-            className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+            value={accountId}
+            onChange={(e) => setAccountId(Number(e.target.value))}
+            aria-label="계좌"
+            className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
           >
-            {BANKS.map((b) => (
-              <option key={b} value={b} className="bg-background">
-                {b}
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id} className="bg-background">
+                {a.alias}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-foreground/50">날짜</span>
+          <span className="text-xs text-text-tertiary">날짜</span>
           <input
             type="date"
             value={spentAt}
             onChange={(e) => setSpentAt(e.target.value)}
             aria-label="날짜"
-            className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+            className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
           />
         </label>
 
         <label className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="text-xs text-foreground/50">메모 (선택)</span>
+          <span className="text-xs text-text-tertiary">메모 (선택)</span>
           <input
             type="text"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             placeholder="내용"
             aria-label="메모"
-            className="min-w-0 rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/15"
+            className="min-w-0 rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
           />
         </label>
 
         <button
           type="submit"
-          disabled={!(Number(amount) > 0)}
-          className="rounded-md bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
+          disabled={!(Number(amount) > 0) || !accountId}
+          className="rounded bg-accent px-4 py-1.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-accent/90 disabled:opacity-40"
         >
           추가
         </button>

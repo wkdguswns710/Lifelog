@@ -2,43 +2,59 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createTransaction,
-  loadTransactions,
-  saveTransactions,
+  fetchTransactions,
+  insertTransaction,
+  softDeleteTransaction,
   type NewTransaction,
   type Transaction,
 } from "@/lib/budget";
 
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "알 수 없는 오류가 발생했어요.";
+}
+
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setTransactions(loadTransactions());
-    setLoaded(true);
+  const reload = useCallback(async () => {
+    try {
+      const rows = await fetchTransactions();
+      setTransactions(rows);
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (loaded) saveTransactions(transactions);
-  }, [transactions, loaded]);
+    reload();
+  }, [reload]);
 
-  const add = useCallback((input: NewTransaction) => {
+  const add = useCallback(async (input: NewTransaction) => {
     if (!Number.isFinite(input.amount) || input.amount <= 0) return;
-    setTransactions((prev) => [createTransaction(input), ...prev]);
+    if (!input.accountId) return;
+    try {
+      const created = await insertTransaction(input);
+      setTransactions((prev) => [created, ...prev]);
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }, []);
 
-  const update = useCallback(
-    (id: string, patch: Partial<Omit<Transaction, "id" | "createdAt">>) => {
-      setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...patch } : t))
-      );
-    },
-    []
-  );
-
-  const remove = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  const remove = useCallback(async (id: number) => {
+    try {
+      await softDeleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }, []);
 
-  return { transactions, loaded, add, update, remove };
+  return { transactions, loaded, error, add, remove };
 }

@@ -1,40 +1,69 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password) return;
-    // Supabase Auth 연동 전 화면 검증용 자리표시자.
     setSubmitting(true);
     setNotice(null);
-    setTimeout(() => {
+    setError(null);
+
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
       setSubmitting(false);
-      setNotice("화면만 먼저 만들었어요. 다음 단계에서 실제 로그인 기능을 연결할게요.");
-    }, 400);
+      if (error) {
+        setError("이메일 또는 비밀번호가 올바르지 않아요.");
+        return;
+      }
+      router.push("/");
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+      setSubmitting(false);
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      if (data.session) {
+        router.push("/");
+      } else {
+        setNotice("가입 확인 이메일을 보냈어요. 메일함을 확인한 뒤 로그인해주세요.");
+        setMode("login");
+      }
+    }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 p-8 dark:border-white/10">
+      <div className="w-full max-w-sm rounded-xl border border-border-subtle p-8">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <span className="text-2xl">🗂️</span>
-          <h1 className="text-lg font-semibold tracking-tight">Lifelog</h1>
-          <p className="text-sm text-foreground/50">
+          <h1 className="text-lg font-medium tracking-tight">Lifelog</h1>
+          <p className="text-sm text-text-tertiary">
             내 일상을 한 곳에서 기록하고 관리하세요.
           </p>
         </div>
 
-        <div className="mb-6 flex rounded-lg border border-black/10 p-0.5 dark:border-white/15">
+        <div className="mb-6 flex rounded border border-border-subtle p-0.5">
           {(["login", "signup"] as Mode[]).map((m) => (
             <button
               key={m}
@@ -42,11 +71,12 @@ export default function LoginForm() {
               onClick={() => {
                 setMode(m);
                 setNotice(null);
+                setError(null);
               }}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`flex-1 rounded px-3 py-1.5 text-sm transition-colors duration-300 ${
                 mode === m
-                  ? "bg-foreground font-medium text-background"
-                  : "text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+                  ? "bg-surface-alt font-medium text-foreground"
+                  : "text-text-secondary hover:bg-surface-alt"
               }`}
             >
               {m === "login" ? "로그인" : "회원가입"}
@@ -56,7 +86,7 @@ export default function LoginForm() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-foreground/50">이메일</span>
+            <span className="text-xs text-text-tertiary">이메일</span>
             <input
               type="email"
               autoComplete="email"
@@ -64,13 +94,13 @@ export default function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               aria-label="이메일"
-              className="rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/15"
+              className="rounded border border-border-subtle bg-transparent px-3 py-2 text-sm outline-none"
               required
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-foreground/50">비밀번호</span>
+            <span className="text-xs text-text-tertiary">비밀번호</span>
             <input
               type="password"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -79,7 +109,7 @@ export default function LoginForm() {
               placeholder="********"
               aria-label="비밀번호"
               minLength={6}
-              className="rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm outline-none dark:border-white/15"
+              className="rounded border border-border-subtle bg-transparent px-3 py-2 text-sm outline-none"
               required
             />
           </label>
@@ -87,7 +117,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={submitting || !email.trim() || !password}
-            className="mt-2 rounded-md bg-foreground py-2 text-sm font-medium text-background transition-opacity disabled:opacity-40"
+            className="mt-2 rounded bg-accent py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-accent/90 disabled:opacity-40"
           >
             {submitting
               ? "처리 중…"
@@ -97,8 +127,13 @@ export default function LoginForm() {
           </button>
         </form>
 
+        {error && (
+          <p className="mt-4 rounded bg-rose-500/10 px-3 py-2 text-center text-xs text-rose-600 dark:text-rose-400">
+            {error}
+          </p>
+        )}
         {notice && (
-          <p className="mt-4 rounded-md bg-black/[0.03] px-3 py-2 text-center text-xs text-foreground/60 dark:bg-white/[0.06]">
+          <p className="mt-4 rounded bg-surface-alt px-3 py-2 text-center text-xs text-text-secondary">
             {notice}
           </p>
         )}

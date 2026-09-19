@@ -24,14 +24,15 @@ import AccountsDrawer from "./AccountsDrawer";
 
 const DEFAULT_FILTERS: BudgetFilterState = {
   type: "all",
-  bank: "all",
+  accountId: "all",
   category: "all",
 };
 
 function applyFilters(txs: Transaction[], filters: BudgetFilterState) {
   return txs.filter((tx) => {
     if (filters.type !== "all" && tx.type !== filters.type) return false;
-    if (filters.bank !== "all" && tx.bank !== filters.bank) return false;
+    if (filters.accountId !== "all" && tx.accountId !== filters.accountId)
+      return false;
     if (filters.category !== "all" && tx.category !== filters.category)
       return false;
     return true;
@@ -39,8 +40,10 @@ function applyFilters(txs: Transaction[], filters: BudgetFilterState) {
 }
 
 export default function BudgetApp() {
-  const { transactions, loaded, add, remove } = useTransactions();
+  const { transactions, loaded, error: txError, add, remove } =
+    useTransactions();
   const rawTx = useRawTransactions();
+  const rawTxError = rawTx.error;
   const accountsState = useAccounts();
   const [month, setMonth] = useState(currentMonthKey());
   const [filters, setFilters] = useState<BudgetFilterState>(DEFAULT_FILTERS);
@@ -50,16 +53,19 @@ export default function BudgetApp() {
 
   const firstRowRefs = useRef(new Map<string, HTMLLIElement>());
 
+  const accountLabel = (accountId: number) =>
+    accountsState.accounts.find((a) => a.id === accountId)?.alias ?? "-";
+
   const pendingCount = rawTx.items.filter((r) => r.status === "pending").length;
 
-  function handleImport(ids: string[]) {
+  function handleImport(ids: number[]) {
     const toImport = rawTx.items.filter((r) => ids.includes(r.id));
     for (const r of toImport) {
       add({
+        accountId: r.accountId,
         type: r.type,
         amount: r.amount,
         category: r.category || (r.type === "income" ? "기타수입" : "기타지출"),
-        bank: r.bank,
         memo: r.memo,
         spentAt: r.spentAt,
       });
@@ -81,6 +87,7 @@ export default function BudgetApp() {
   }
 
   const seenDays = new Set<string>();
+  const error = txError || accountsState.error || rawTxError;
 
   return (
     <div>
@@ -93,7 +100,7 @@ export default function BudgetApp() {
               type="button"
               onClick={() => setAccountsOpen(true)}
               aria-label="내 계좌 열기"
-              className="flex size-9 items-center justify-center rounded-md border border-black/10 text-base hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+              className="flex size-9 items-center justify-center rounded border border-border-subtle text-base hover:bg-surface-alt"
             >
               🏦
             </button>
@@ -101,7 +108,7 @@ export default function BudgetApp() {
               type="button"
               onClick={() => setInboxOpen(true)}
               aria-label="가져오기함 열기"
-              className="relative flex size-9 items-center justify-center rounded-md border border-black/10 text-base hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+              className="relative flex size-9 items-center justify-center rounded border border-border-subtle text-base hover:bg-surface-alt"
             >
               📥
               {pendingCount > 0 && (
@@ -114,11 +121,18 @@ export default function BudgetApp() {
         }
       />
 
+      {error && (
+        <p className="mb-4 rounded bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+          {error}
+        </p>
+      )}
+
       <ImportInboxDrawer
         open={inboxOpen}
         onClose={() => setInboxOpen(false)}
         rawTransactions={rawTx.items}
         confirmedTransactions={transactions}
+        accounts={accountsState.accounts}
         onImport={handleImport}
       />
 
@@ -126,12 +140,14 @@ export default function BudgetApp() {
         open={accountsOpen}
         onClose={() => setAccountsOpen(false)}
         accounts={accountsState.accounts}
+        error={accountsState.error}
         onAdd={accountsState.add}
         onUpdate={accountsState.update}
         onRemove={accountsState.remove}
+        onReorder={accountsState.reorder}
       />
 
-      <TransactionForm onAdd={add} />
+      <TransactionForm accounts={accountsState.accounts} onAdd={add} />
 
       {/* 월 이동 네비 */}
       <div className="mb-4 flex items-center justify-center gap-4">
@@ -142,7 +158,7 @@ export default function BudgetApp() {
             setSelectedDay(null);
           }}
           aria-label="이전 달"
-          className="rounded-md px-2 py-1 text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+          className="rounded px-2 py-1 text-text-secondary hover:bg-surface-alt"
         >
           ←
         </button>
@@ -156,7 +172,7 @@ export default function BudgetApp() {
             setSelectedDay(null);
           }}
           aria-label="다음 달"
-          className="rounded-md px-2 py-1 text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+          className="rounded px-2 py-1 text-text-secondary hover:bg-surface-alt"
         >
           →
         </button>
@@ -167,7 +183,7 @@ export default function BudgetApp() {
               setMonth(currentMonthKey());
               setSelectedDay(null);
             }}
-            className="rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-black/5 dark:hover:bg-white/10"
+            className="rounded px-2 py-1 text-xs text-text-tertiary hover:bg-surface-alt"
           >
             이번 달
           </button>
@@ -198,10 +214,14 @@ export default function BudgetApp() {
         />
       </div>
 
-      <BudgetFilters filters={filters} onChange={setFilters} />
+      <BudgetFilters
+        filters={filters}
+        accounts={accountsState.accounts}
+        onChange={setFilters}
+      />
 
       {!loaded ? (
-        <p className="py-10 text-center text-sm text-foreground/40">
+        <p className="py-10 text-center text-sm text-text-tertiary">
           불러오는 중…
         </p>
       ) : (
@@ -214,7 +234,7 @@ export default function BudgetApp() {
           />
 
           {sortedTxs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-black/15 py-12 text-center text-sm text-foreground/50 dark:border-white/15">
+            <div className="rounded-xl border border-dashed border-border-strong py-12 text-center text-sm text-text-tertiary">
               조건에 맞는 거래가 없어요.
             </div>
           ) : (
@@ -226,6 +246,7 @@ export default function BudgetApp() {
                   <TransactionItem
                     key={tx.id}
                     tx={tx}
+                    accountLabel={accountLabel(tx.accountId)}
                     onRemove={remove}
                     highlighted={tx.spentAt === selectedDay}
                     rowRef={
@@ -261,9 +282,9 @@ function SummaryTile({
   const text =
     signed && value > 0 ? `+${formatWon(value)}` : formatWon(value);
   return (
-    <div className="rounded-xl border border-black/10 p-4 dark:border-white/10">
-      <div className="text-xs text-foreground/50">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${className}`}>
+    <div className="rounded-xl border border-border-subtle p-4">
+      <div className="text-xs text-text-tertiary">{label}</div>
+      <div className={`mt-1 text-lg font-medium tabular-nums ${className}`}>
         {text}
       </div>
     </div>

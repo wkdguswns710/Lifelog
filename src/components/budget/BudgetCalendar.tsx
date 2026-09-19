@@ -31,12 +31,12 @@ export default function BudgetCalendar({
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
+    <div className="overflow-hidden rounded-xl border border-border-subtle">
       <div className="grid grid-cols-7">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="bg-black/[0.02] py-1.5 text-center text-xs text-foreground/40 dark:bg-white/[0.03]"
+            className="bg-surface-alt py-1.5 text-center text-xs text-text-tertiary"
           >
             {label}
           </div>
@@ -48,7 +48,7 @@ export default function BudgetCalendar({
             return (
               <div
                 key={i}
-                className="min-h-14 border-t border-r border-black/10 dark:border-white/10"
+                className="min-h-14 border-t border-r border-border-subtle"
               />
             );
           }
@@ -63,15 +63,15 @@ export default function BudgetCalendar({
               type="button"
               disabled={!hasTx}
               onClick={() => onSelectDay(dateStr)}
-              className={`min-h-14 border-t border-r border-black/10 p-1.5 text-left transition-colors dark:border-white/10 ${
+              className={`min-h-14 border-t border-r border-border-subtle p-1.5 text-left transition-colors duration-300 ${
                 selected
-                  ? "bg-black/[0.06] dark:bg-white/[0.1]"
+                  ? "bg-surface-alt"
                   : hasTx
-                    ? "cursor-pointer hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                    ? "cursor-pointer hover:bg-surface-alt"
                     : "cursor-default"
               }`}
             >
-              <div className="text-xs text-foreground/50">{day}</div>
+              <div className="text-xs text-text-tertiary">{day}</div>
               {hasTx && (
                 <div
                   className={`mt-0.5 text-xs font-medium tabular-nums ${

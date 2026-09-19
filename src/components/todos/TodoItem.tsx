@@ -9,7 +9,6 @@ const priorityStyle: Record<Priority, string> = {
   low: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
 };
 
-/** 오늘 날짜를 YYYY-MM-DD (로컬 기준)로 반환 */
 function todayStr(): string {
   const d = new Date();
   const off = d.getTimezoneOffset();
@@ -52,13 +51,13 @@ export default function TodoItem({
   const due = dueMeta(todo.dueDate, todo.done);
 
   return (
-    <li className="group flex items-center gap-3 rounded-lg border border-black/10 px-3 py-2.5 dark:border-white/10">
+    <li className="group flex items-center gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
       <input
         type="checkbox"
         checked={todo.done}
         onChange={() => onToggle(todo.id)}
         aria-label={todo.done ? "완료 취소" : "완료로 표시"}
-        className="size-4 shrink-0 cursor-pointer accent-foreground"
+        className="size-4 shrink-0 cursor-pointer accent-accent"
       />
 
       {editing ? (
@@ -83,7 +82,7 @@ export default function TodoItem({
           onDoubleClick={() => setEditing(true)}
           onClick={() => onToggle(todo.id)}
           className={`min-w-0 flex-1 truncate text-left text-sm ${
-            todo.done ? "text-foreground/40 line-through" : ""
+            todo.done ? "text-text-tertiary line-through" : ""
           }`}
           title="클릭: 완료 토글 · 더블클릭: 수정"
         >
@@ -97,8 +96,8 @@ export default function TodoItem({
             due.overdue
               ? "font-medium text-red-500"
               : due.isToday
-                ? "font-medium text-foreground/70"
-                : "text-foreground/40"
+                ? "font-medium text-text-secondary"
+                : "text-text-tertiary"
           }`}
         >
           {due.overdue ? "⚠ " : "📅 "}
@@ -107,7 +106,7 @@ export default function TodoItem({
       )}
 
       <span
-        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${priorityStyle[todo.priority]}`}
+        className={`shrink-0 rounded px-2 py-0.5 text-xs ${priorityStyle[todo.priority]}`}
       >
         {PRIORITY_LABEL[todo.priority]}
       </span>
@@ -121,7 +120,7 @@ export default function TodoItem({
           }}
           aria-label="수정"
           title="수정"
-          className="rounded p-1 text-foreground/50 hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+          className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
         >
           ✏️
         </button>
@@ -130,7 +129,7 @@ export default function TodoItem({
           onClick={() => onRemove(todo.id)}
           aria-label="삭제"
           title="삭제"
-          className="rounded p-1 text-foreground/50 hover:bg-red-500/10 hover:text-red-500"
+          className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"
         >
           🗑️
         </button>

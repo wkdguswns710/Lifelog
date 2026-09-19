@@ -1,27 +1,30 @@
-// 가계부(거래) 데이터 계층.
-// 할 일과 동일하게 localStorage에 저장하며, 나중에 Supabase로 교체하기 쉽도록
-// 저장소 접근을 이 파일의 함수들로 격리한다.
+// 가계부(확정 거래) 데이터 계층 — Supabase tb_transactions 테이블.
+// RLS가 created_by = auth.uid() 조건으로 걸려 있어, 로그인한 사용자 본인 행만 오간다.
+// 삭제는 하드 삭제가 아니라 deleted_yn 소프트 삭제이며(테이블 설계), 조회 시 항상 제외한다.
+
+import { supabase } from "./supabase/client";
 
 export type TxType = "income" | "expense";
 
 export type Transaction = {
-  id: string;
+  id: number;
+  accountId: number;
   type: TxType;
   amount: number; // 원 단위 정수(양수)
   category: string;
   memo: string;
-  bank: string;
-  spentAt: string; // YYYY-MM-DD
+  occurredAt: string; // ISO 8601 (시분초 포함)
+  spentAt: string; // YYYY-MM-DD, occurredAt에서 로컬 기준으로 뽑아낸 날짜(달력/월별 집계용)
   createdAt: string; // ISO 8601
 };
 
 export type NewTransaction = {
+  accountId: number;
   type: TxType;
   amount: number;
   category: string;
   memo?: string;
-  bank?: string;
-  spentAt: string;
+  spentAt: string; // 사용자가 고른 날짜. 시각은 저장 시점의 현재 시각을 붙인다.
 };
 
 export type MonthSummary = {
@@ -30,24 +33,19 @@ export type MonthSummary = {
   balance: number;
 };
 
-const STORAGE_KEY = "lifelog:transactions";
-
 export const TX_TYPE_LABEL: Record<TxType, string> = {
   income: "수입",
   expense: "지출",
 };
 
 export const BANKS = [
-  "직접입력",
-  "국민은행",
-  "신한은행",
-  "우리은행",
-  "하나은행",
-  "기업은행",
-  "농협은행",
   "토스뱅크",
   "카카오뱅크",
-  "케이뱅크",
+  "신한은행",
+  "국민은행",
+  "농협은행",
+  "우리은행",
+  "미래에셋증권",
 ];
 
 export const CATEGORIES: Record<TxType, string[]> = {
@@ -64,75 +62,101 @@ export const CATEGORIES: Record<TxType, string[]> = {
   ],
 };
 
-function isTxType(value: unknown): value is TxType {
-  return value === "income" || value === "expense";
-}
+const SELECT_COLUMNS =
+  "id, account_id, type, amount, category, memo, occurred_at, created_at";
 
-function normalize(raw: unknown): Transaction | null {
-  if (!raw || typeof raw !== "object") return null;
-  const t = raw as Record<string, unknown>;
-  if (typeof t.id !== "string") return null;
-  if (!isTxType(t.type)) return null;
-  const amount = Number(t.amount);
-  if (!Number.isFinite(amount)) return null;
-  return {
-    id: t.id,
-    type: t.type,
-    amount: Math.abs(Math.round(amount)),
-    category: typeof t.category === "string" ? t.category : "기타지출",
-    memo: typeof t.memo === "string" ? t.memo : "",
-    bank: typeof t.bank === "string" ? t.bank : BANKS[0],
-    spentAt: typeof t.spentAt === "string" ? t.spentAt : todayStr(),
-    createdAt:
-      typeof t.createdAt === "string" ? t.createdAt : new Date().toISOString(),
-  };
-}
-
-export function loadTransactions(): Transaction[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map(normalize)
-      .filter((t): t is Transaction => t !== null);
-  } catch {
-    return [];
-  }
-}
-
-export function saveTransactions(txs: Transaction[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(txs));
-  } catch {
-    // 저장 실패는 조용히 무시한다.
-  }
-}
-
-export function createTransaction(input: NewTransaction): Transaction {
-  return {
-    id:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    type: input.type,
-    amount: Math.abs(Math.round(input.amount)),
-    category: input.category,
-    memo: input.memo?.trim() ?? "",
-    bank: input.bank ?? BANKS[0],
-    spentAt: input.spentAt,
-    createdAt: new Date().toISOString(),
-  };
-}
+type TransactionRow = {
+  id: number;
+  account_id: number;
+  type: TxType;
+  amount: number;
+  category: string;
+  memo: string | null;
+  occurred_at: string;
+  created_at: string;
+};
 
 /** 오늘 날짜를 YYYY-MM-DD (로컬 기준)로 반환 */
 export function todayStr(): string {
-  const d = new Date();
+  return toLocalDateStr(new Date().toISOString());
+}
+
+/** ISO 타임스탬프(UTC) → YYYY-MM-DD (로컬 기준) */
+export function toLocalDateStr(isoString: string): string {
+  const d = new Date(isoString);
   const off = d.getTimezoneOffset();
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+}
+
+/** 사용자가 고른 날짜(YYYY-MM-DD) + 현재 시:분:초를 합쳐 timestamptz용 ISO 문자열을 만든다. */
+function combineDateWithNow(dateStr: string): string {
+  const now = new Date();
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(
+    y,
+    m - 1,
+    d,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds()
+  ).toISOString();
+}
+
+function toTransaction(row: TransactionRow): Transaction {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    type: row.type,
+    amount: row.amount,
+    category: row.category,
+    memo: row.memo ?? "",
+    occurredAt: row.occurred_at,
+    spentAt: toLocalDateStr(row.occurred_at),
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchTransactions(): Promise<Transaction[]> {
+  const { data, error } = await supabase
+    .from("tb_transactions")
+    .select(SELECT_COLUMNS)
+    .eq("deleted_yn", "N")
+    .order("occurred_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(toTransaction);
+}
+
+export async function insertTransaction(
+  input: NewTransaction
+): Promise<Transaction> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("로그인이 필요해요.");
+
+  const { data, error } = await supabase
+    .from("tb_transactions")
+    .insert({
+      account_id: input.accountId,
+      source_type: "manual",
+      type: input.type,
+      amount: Math.abs(Math.round(input.amount)),
+      category: input.category,
+      memo: input.memo?.trim() || null,
+      occurred_at: combineDateWithNow(input.spentAt),
+      created_by: userData.user.id,
+    })
+    .select(SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toTransaction(data);
+}
+
+/** 하드 삭제가 아니라 deleted_yn = 'Y'로 표시한다(테이블 설계상 소프트 삭제). */
+export async function softDeleteTransaction(id: number): Promise<void> {
+  const { error } = await supabase
+    .from("tb_transactions")
+    .update({ deleted_yn: "Y", deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 /** YYYY-MM-DD → YYYY-MM */

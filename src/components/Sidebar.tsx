@@ -11,10 +11,10 @@ export default function Sidebar() {
   if (pathname === "/login") return null;
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-black/10 bg-black/[0.02] px-4 py-6 md:flex dark:border-white/10 dark:bg-white/[0.02]">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border-subtle bg-surface-alt px-4 py-6 md:flex">
       <Link href="/" className="mb-8 flex items-center gap-2 px-2">
         <span className="text-xl">🗂️</span>
-        <span className="text-lg font-semibold tracking-tight">Lifelog</span>
+        <span className="text-lg font-medium tracking-tight">Lifelog</span>
       </Link>
 
       <nav className="flex flex-col gap-1">
@@ -28,10 +28,10 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`flex items-center gap-3 rounded px-3 py-2 text-sm transition-colors duration-300 ${
                 active
-                  ? "bg-foreground text-background font-medium"
-                  : "text-foreground/70 hover:bg-black/5 dark:hover:bg-white/10"
+                  ? "bg-background font-medium text-foreground"
+                  : "text-text-secondary hover:bg-background"
               }`}
             >
               <span className="text-base">{item.icon}</span>
@@ -41,7 +41,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-black/10 pt-3 dark:border-white/10">
+      <div className="mt-auto border-t border-border-subtle pt-3">
         <ThemeToggle />
       </div>
     </aside>

@@ -17,14 +17,14 @@ export default function DashboardPage() {
           <Link
             key={item.href}
             href={item.href}
-            className="group rounded-xl border border-black/10 p-5 transition-colors hover:border-foreground/30 hover:bg-black/[0.02] dark:border-white/10 dark:hover:bg-white/[0.04]"
+            className="group rounded-xl border border-border-subtle p-5 transition-colors duration-300 hover:border-border-strong hover:bg-surface-alt"
           >
             <div className="mb-3 text-2xl">{item.icon}</div>
             <div className="font-medium">{item.label}</div>
-            <div className="mt-1 text-sm text-foreground/60">
+            <div className="mt-1 text-sm text-text-secondary">
               {item.description}
             </div>
-            <div className="mt-4 text-sm text-foreground/40 group-hover:text-foreground/70">
+            <div className="mt-4 text-sm text-text-tertiary group-hover:text-text-secondary">
               바로가기 →
             </div>
           </Link>

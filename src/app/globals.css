@@ -1,28 +1,46 @@
 @import "tailwindcss";
 
-/* data-theme 속성 기반 다크모드 (Tailwind의 dark: 변형을 속성에 연결) */
+/* DESIGN.md 기반 테마: 색은 Electric Blue 하나 + 뉴트럴, 그림자 없음, 4px/12px 라운드만 사용 */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root,
 [data-theme="light"] {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff; /* Pure White */
+  --foreground: #171a20; /* Carbon Dark */
+  --accent: #3e6ae1; /* Electric Blue — primary CTA 전용 */
+  --surface-alt: #f4f4f4; /* Light Ash */
+  --text-secondary: #393c41; /* Graphite */
+  --text-tertiary: #5c5e62; /* Pewter */
+  --border-subtle: #eeeeee; /* Cloud Gray */
+  --border-strong: #d0d1d2; /* Pale Silver */
 }
 
 [data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #171a20; /* Carbon Dark */
+  --foreground: #f4f4f4;
+  --accent: #6d8ef0; /* 어두운 배경 대비를 위해 살짝 밝힌 Electric Blue */
+  --surface-alt: #20242c;
+  --text-secondary: #c7c9cc;
+  --text-tertiary: #9a9da1;
+  --border-subtle: #2a2f38;
+  --border-strong: #3a4049;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
+  --color-surface-alt: var(--surface-alt);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+    sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
