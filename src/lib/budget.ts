@@ -136,7 +136,6 @@ export async function insertTransaction(
     .from("tb_transactions")
     .insert({
       account_id: input.accountId,
-      source_type: "manual",
       type: input.type,
       amount: Math.abs(Math.round(input.amount)),
       category: input.category,

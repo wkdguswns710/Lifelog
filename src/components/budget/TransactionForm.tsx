@@ -51,8 +51,7 @@ export default function TransactionForm({
   if (accounts.length === 0) {
     return (
       <div className="mb-6 rounded-xl border border-dashed border-border-strong p-4 text-center text-sm text-text-tertiary">
-        거래를 기록하려면 먼저 계좌를 등록해주세요. 🏦 버튼으로 계좌를 추가할
-        수 있어요.
+        거래를 기록하려면 먼저 왼쪽에서 계좌를 등록해주세요.
       </div>
     );
   }
