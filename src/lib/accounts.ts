@@ -47,6 +47,12 @@ function toAccount(row: AccountRow): Account {
   };
 }
 
+/** 은행/뒷자리까지 포함한 표기. 콤보박스처럼 별명만으로 구분이 안 되는 곳에 쓴다. */
+export function formatAccountLabel(account: Account): string {
+  const suffix = account.last4 ? ` ${account.last4}` : "";
+  return `${account.alias} · ${account.bank}${suffix}`;
+}
+
 export async function fetchAccounts(): Promise<Account[]> {
   const { data, error } = await supabase
     .from("tb_accounts")

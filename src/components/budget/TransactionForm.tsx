@@ -8,7 +8,7 @@ import {
   type NewTransaction,
   type TxType,
 } from "@/lib/budget";
-import type { Account } from "@/lib/accounts";
+import { formatAccountLabel, type Account } from "@/lib/accounts";
 
 export default function TransactionForm({
   accounts,
@@ -123,7 +123,7 @@ export default function TransactionForm({
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id} className="bg-background">
-                {a.alias}
+                {formatAccountLabel(a)}
               </option>
             ))}
           </select>

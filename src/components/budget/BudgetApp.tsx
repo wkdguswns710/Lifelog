@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAccounts } from "@/hooks/useAccounts";
+import { formatAccountLabel } from "@/lib/accounts";
 import {
   currentMonthKey,
   filterByMonth,
@@ -47,8 +48,10 @@ export default function BudgetApp() {
 
   const firstRowRefs = useRef(new Map<string, HTMLLIElement>());
 
-  const accountLabel = (accountId: number) =>
-    accountsState.accounts.find((a) => a.id === accountId)?.alias ?? "-";
+  const accountLabel = (accountId: number) => {
+    const account = accountsState.accounts.find((a) => a.id === accountId);
+    return account ? formatAccountLabel(account) : "-";
+  };
 
   const monthTxs = useMemo(
     () => applyFilters(filterByMonth(transactions, month), filters),

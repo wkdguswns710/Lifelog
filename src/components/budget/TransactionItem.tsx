@@ -39,7 +39,7 @@ export default function TransactionItem({
         {tx.memo || <span className="text-text-tertiary">—</span>}
       </span>
 
-      <span className="hidden shrink-0 text-xs text-text-tertiary sm:inline">
+      <span className="hidden max-w-[9rem] shrink-0 truncate text-xs text-text-tertiary sm:inline">
         {accountLabel}
       </span>
 
