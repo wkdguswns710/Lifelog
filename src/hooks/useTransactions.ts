@@ -5,6 +5,7 @@ import {
   fetchTransactions,
   insertTransaction,
   softDeleteTransaction,
+  updateTransaction,
   type NewTransaction,
   type Transaction,
 } from "@/lib/budget";
@@ -46,6 +47,20 @@ export function useTransactions() {
     }
   }, []);
 
+  const update = useCallback(async (id: number, input: NewTransaction) => {
+    if (!Number.isFinite(input.amount) || input.amount <= 0) return;
+    if (!input.accountId) return;
+    try {
+      const updated = await updateTransaction(id, input);
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? updated : t))
+      );
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }, []);
+
   const remove = useCallback(async (id: number) => {
     try {
       await softDeleteTransaction(id);
@@ -56,5 +71,5 @@ export function useTransactions() {
     }
   }, []);
 
-  return { transactions, loaded, error, add, remove };
+  return { transactions, loaded, error, add, update, remove };
 }

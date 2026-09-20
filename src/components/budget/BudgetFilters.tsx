@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORIES, TX_TYPE_LABEL, type TxType } from "@/lib/budget";
+import { categoryOptionsFor, TX_TYPE_LABEL, type TxType } from "@/lib/budget";
 import { formatAccountLabel, type Account } from "@/lib/accounts";
 
 export type BudgetFilterState = {
@@ -20,10 +20,7 @@ export default function BudgetFilters({
   accounts: Account[];
   onChange: (next: BudgetFilterState) => void;
 }) {
-  const categoryOptions =
-    filters.type === "all"
-      ? [...CATEGORIES.expense, ...CATEGORIES.income]
-      : CATEGORIES[filters.type];
+  const categoryOptions = categoryOptionsFor(filters.type);
 
   function setType(type: TxType | "all") {
     onChange({ ...filters, type, category: "all" });
@@ -39,7 +36,11 @@ export default function BudgetFilters({
             onClick={() => setType(t)}
             className={`whitespace-nowrap rounded px-2.5 py-1 text-xs transition-colors duration-300 ${
               filters.type === t
-                ? "bg-background font-medium text-foreground"
+                ? t === "income"
+                  ? "bg-emerald-500 font-medium text-white"
+                  : t === "expense"
+                    ? "bg-rose-500 font-medium text-white"
+                    : "bg-background font-medium text-foreground"
                 : "text-text-secondary hover:bg-background"
             }`}
           >

@@ -39,7 +39,7 @@ function applyFilters(txs: Transaction[], filters: BudgetFilterState) {
 }
 
 export default function BudgetApp() {
-  const { transactions, loaded, error: txError, add, remove } =
+  const { transactions, loaded, error: txError, add, update, remove } =
     useTransactions();
   const accountsState = useAccounts();
   const [month, setMonth] = useState(currentMonthKey());
@@ -192,7 +192,9 @@ export default function BudgetApp() {
                       <TransactionItem
                         key={tx.id}
                         tx={tx}
+                        accounts={accountsState.accounts}
                         accountLabel={accountLabel(tx.accountId)}
+                        onUpdate={update}
                         onRemove={remove}
                         highlighted={tx.spentAt === selectedDay}
                         rowRef={

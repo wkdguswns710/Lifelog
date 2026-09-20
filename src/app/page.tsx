@@ -6,7 +6,7 @@ export default function DashboardPage() {
   const cards = navItems.filter((item) => item.href !== "/");
 
   return (
-    <div>
+    <div className="mx-auto max-w-[1383px]">
       <PageHeader
         title="대시보드"
         description="오늘의 Lifelog를 한눈에. 아래 카드에서 각 메뉴로 이동하세요."

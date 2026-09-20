@@ -24,7 +24,8 @@ export type NewTransaction = {
   amount: number;
   category: string;
   memo?: string;
-  spentAt: string; // 사용자가 고른 날짜. 시각은 저장 시점의 현재 시각을 붙인다.
+  spentAt: string; // 사용자가 고른 날짜 (YYYY-MM-DD)
+  spentTime: string; // 사용자가 고른 시각 (HH:mm)
 };
 
 export type MonthSummary = {
@@ -62,6 +63,13 @@ export const CATEGORIES: Record<TxType, string[]> = {
   ],
 };
 
+/** 분류 선택지를 한 곳에서만 계산한다 — 입력 폼과 필터가 서로 다른 목록을
+ *  보여주는 일이 없도록, 둘 다 이 함수만 호출한다. */
+export function categoryOptionsFor(type: TxType | "all"): string[] {
+  if (type === "all") return [...CATEGORIES.expense, ...CATEGORIES.income];
+  return CATEGORIES[type];
+}
+
 const SELECT_COLUMNS =
   "id, account_id, type, amount, category, memo, occurred_at, created_at";
 
@@ -81,6 +89,14 @@ export function todayStr(): string {
   return toLocalDateStr(new Date().toISOString());
 }
 
+/** 현재 시각을 HH:mm (로컬 기준)로 반환 */
+export function nowTimeStr(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes()
+  ).padStart(2, "0")}`;
+}
+
 /** ISO 타임스탬프(UTC) → YYYY-MM-DD (로컬 기준) */
 export function toLocalDateStr(isoString: string): string {
   const d = new Date(isoString);
@@ -88,18 +104,18 @@ export function toLocalDateStr(isoString: string): string {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
 }
 
-/** 사용자가 고른 날짜(YYYY-MM-DD) + 현재 시:분:초를 합쳐 timestamptz용 ISO 문자열을 만든다. */
-function combineDateWithNow(dateStr: string): string {
-  const now = new Date();
+/** ISO 타임스탬프(UTC) → HH:mm (로컬 기준) */
+export function toLocalTimeStr(isoString: string): string {
+  const d = new Date(isoString);
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(11, 16);
+}
+
+/** 사용자가 고른 날짜(YYYY-MM-DD) + 시각(HH:mm)을 합쳐 timestamptz용 ISO 문자열을 만든다. */
+function combineDateAndTime(dateStr: string, timeStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(
-    y,
-    m - 1,
-    d,
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds()
-  ).toISOString();
+  const [h, min] = timeStr.split(":").map(Number);
+  return new Date(y, m - 1, d, h || 0, min || 0, 0).toISOString();
 }
 
 function toTransaction(row: TransactionRow): Transaction {
@@ -140,9 +156,30 @@ export async function insertTransaction(
       amount: Math.abs(Math.round(input.amount)),
       category: input.category,
       memo: input.memo?.trim() || null,
-      occurred_at: combineDateWithNow(input.spentAt),
+      occurred_at: combineDateAndTime(input.spentAt, input.spentTime),
       created_by: userData.user.id,
     })
+    .select(SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toTransaction(data);
+}
+
+export async function updateTransaction(
+  id: number,
+  input: NewTransaction
+): Promise<Transaction> {
+  const { data, error } = await supabase
+    .from("tb_transactions")
+    .update({
+      account_id: input.accountId,
+      type: input.type,
+      amount: Math.abs(Math.round(input.amount)),
+      category: input.category,
+      memo: input.memo?.trim() || null,
+      occurred_at: combineDateAndTime(input.spentAt, input.spentTime),
+    })
+    .eq("id", id)
     .select(SELECT_COLUMNS)
     .single();
   if (error) throw error;
