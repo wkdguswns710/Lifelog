@@ -1,30 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { todosByCategory, type Category, type Todo, type TodoDetailPatch } from "@/lib/todos";
+import {
+  todosByPurpose,
+  type Purpose,
+  type Todo,
+  type TodoCategory,
+  type TodoDetailPatch,
+} from "@/lib/todos";
 import TodoItem from "./TodoItem";
 
 export default function TodoColumn({
-  category,
+  purpose,
   label,
   todos,
+  categories,
   onToggle,
   onUpdate,
   onRemove,
   onReorder,
 }: {
-  category: Category;
+  purpose: Purpose;
   label: string;
   todos: Todo[];
+  categories: TodoCategory[];
   onToggle: (id: number) => void;
   onUpdate: (id: number, patch: TodoDetailPatch) => void;
   onRemove: (id: number) => void;
-  onReorder: (category: Category, newOrder: Todo[]) => void;
+  onReorder: (purpose: Purpose, newOrder: Todo[]) => void;
 }) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
 
-  const items = todosByCategory(todos, category);
+  const items = todosByPurpose(todos, purpose);
+  const categoryName = (id: number | null) =>
+    id == null ? null : categories.find((c) => c.id === id)?.name ?? null;
 
   function handleDrop(targetId: number) {
     setDragOverId(null);
@@ -35,7 +45,7 @@ export default function TodoColumn({
     const next = [...items];
     const [moved] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, moved);
-    onReorder(category, next);
+    onReorder(purpose, next);
     setDragId(null);
   }
 
@@ -56,6 +66,8 @@ export default function TodoColumn({
             <TodoItem
               key={todo.id}
               todo={todo}
+              categories={categories}
+              categoryName={categoryName(todo.categoryId)}
               draggable
               dragging={dragId === todo.id}
               dragOver={dragOverId === todo.id}

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import {
-  CATEGORY_LABEL,
   PRIORITY_LABEL,
-  type Category,
+  PURPOSE_LABEL,
   type Priority,
+  type Purpose,
   type Todo,
+  type TodoCategory,
   type TodoDetailPatch,
 } from "@/lib/todos";
 
@@ -41,6 +42,8 @@ function formatDateTime(iso: string | null): string {
 
 export default function TodoItem({
   todo,
+  categories,
+  categoryName,
   draggable,
   dragging,
   dragOver,
@@ -54,6 +57,8 @@ export default function TodoItem({
   onRemove,
 }: {
   todo: Todo;
+  categories: TodoCategory[];
+  categoryName: string | null;
   draggable: boolean;
   dragging: boolean;
   dragOver: boolean;
@@ -76,6 +81,7 @@ export default function TodoItem({
     return (
       <EditRow
         todo={todo}
+        categories={categories}
         onSave={(patch) => {
           onUpdate(todo.id, patch);
           setEditing(false);
@@ -124,6 +130,12 @@ export default function TodoItem({
         >
           {todo.title}
         </button>
+
+        {categoryName && (
+          <span className="shrink-0 rounded bg-surface-alt px-2 py-0.5 text-xs text-text-secondary">
+            {categoryName}
+          </span>
+        )}
 
         {due && (
           <span
@@ -187,15 +199,20 @@ export default function TodoItem({
 
 function EditRow({
   todo,
+  categories,
   onSave,
   onCancel,
 }: {
   todo: Todo;
+  categories: TodoCategory[];
   onSave: (patch: TodoDetailPatch) => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(todo.title);
-  const [category, setCategory] = useState<Category>(todo.category);
+  const [purpose, setPurpose] = useState<Purpose>(todo.purpose);
+  const [categoryId, setCategoryId] = useState<string>(
+    todo.categoryId != null ? String(todo.categoryId) : ""
+  );
   const [priority, setPriority] = useState<Priority>(todo.priority);
   const [dueDate, setDueDate] = useState(todo.dueDate ?? "");
   const [memo, setMemo] = useState(todo.memo);
@@ -211,14 +228,29 @@ function EditRow({
       />
       <div className="flex flex-wrap gap-2">
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value as Category)}
+          value={purpose}
+          onChange={(e) => setPurpose(e.target.value as Purpose)}
+          aria-label="구분"
+          className="rounded border border-border-subtle bg-transparent px-2 py-1 text-xs outline-none"
+        >
+          {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((p) => (
+            <option key={p} value={p} className="bg-background">
+              {PURPOSE_LABEL[p]}
+            </option>
+          ))}
+        </select>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
           aria-label="카테고리"
           className="rounded border border-border-subtle bg-transparent px-2 py-1 text-xs outline-none"
         >
-          {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
-            <option key={c} value={c} className="bg-background">
-              {CATEGORY_LABEL[c]}
+          <option value="" className="bg-background">
+            카테고리 없음
+          </option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id} className="bg-background">
+              {c.name}
             </option>
           ))}
         </select>
@@ -255,7 +287,14 @@ function EditRow({
           type="button"
           onClick={() =>
             title.trim() &&
-            onSave({ title, category, priority, dueDate: dueDate || null, memo })
+            onSave({
+              title,
+              purpose,
+              categoryId: categoryId ? Number(categoryId) : null,
+              priority,
+              dueDate: dueDate || null,
+              memo,
+            })
           }
           className="rounded bg-accent px-2 py-1 text-xs font-medium text-white transition-colors duration-300 hover:bg-accent/90"
         >

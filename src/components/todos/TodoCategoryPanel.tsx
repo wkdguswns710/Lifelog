@@ -1,0 +1,133 @@
+"use client";
+
+import { useState } from "react";
+import type { TodoCategory } from "@/lib/todos";
+
+export default function TodoCategoryPanel({
+  categories,
+  error,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: {
+  categories: TodoCategory[];
+  error?: string | null;
+  onAdd: (name: string) => void;
+  onUpdate: (id: number, name: string) => void;
+  onRemove: (id: number) => void;
+}) {
+  const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onAdd(name);
+    setName("");
+  }
+
+  return (
+    <div className="rounded-xl border border-border-subtle p-3 md:w-56 md:shrink-0">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-base">🏷️</span>
+        <span className="font-medium">카테고리</span>
+      </div>
+
+      {error && (
+        <p className="mb-3 rounded bg-rose-500/10 px-3 py-2 text-xs text-rose-600 dark:text-rose-400">
+          {error}
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} className="mb-3 flex gap-1.5">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 운동"
+          aria-label="새 카테고리 이름"
+          className="min-w-0 flex-1 rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-text-tertiary"
+        />
+        <button
+          type="submit"
+          disabled={!name.trim()}
+          className="shrink-0 rounded bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-accent/90 disabled:opacity-40"
+        >
+          추가
+        </button>
+      </form>
+
+      {categories.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border-strong py-8 text-center text-xs text-text-tertiary">
+          아직 카테고리가 없어요.
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {categories.map((c) =>
+            editingId === c.id ? (
+              <li key={c.id} className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={draft}
+                  autoFocus
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (draft.trim()) onUpdate(c.id, draft);
+                      setEditingId(null);
+                    }
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  className="min-w-0 flex-1 rounded border border-accent bg-transparent px-2 py-1 text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (draft.trim()) onUpdate(c.id, draft);
+                    setEditingId(null);
+                  }}
+                  aria-label="저장"
+                  title="저장"
+                  className="shrink-0 rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
+                >
+                  ✓
+                </button>
+              </li>
+            ) : (
+              <li
+                key={c.id}
+                className="group flex items-center gap-2 rounded px-2 py-1.5 hover:bg-surface-alt"
+              >
+                <span className="min-w-0 flex-1 truncate text-sm">{c.name}</span>
+                <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraft(c.name);
+                      setEditingId(c.id);
+                    }}
+                    aria-label="수정"
+                    title="수정"
+                    className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(c.id)}
+                    aria-label="삭제"
+                    title="삭제"
+                    className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}

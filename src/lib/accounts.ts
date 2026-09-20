@@ -7,7 +7,6 @@ export type Account = {
   id: number;
   bank: string;
   last4: string | null;
-  holderName: string | null;
   alias: string;
   sortOrder: number;
   createdAt: string;
@@ -24,7 +23,6 @@ type AccountRow = {
   id: number;
   bank: string;
   last4: string | null;
-  holder_name: string | null;
   alias: string;
   sort_order: number;
   created_at: string;
@@ -32,14 +30,13 @@ type AccountRow = {
 };
 
 const SELECT_COLUMNS =
-  "id, bank, last4, holder_name, alias, sort_order, created_at, updated_at";
+  "id, bank, last4, alias, sort_order, created_at, updated_at";
 
 function toAccount(row: AccountRow): Account {
   return {
     id: row.id,
     bank: row.bank,
     last4: row.last4,
-    holderName: row.holder_name,
     alias: row.alias,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

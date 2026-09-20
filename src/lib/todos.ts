@@ -1,16 +1,21 @@
-// 할 일(Todo) 데이터 계층 — Supabase tb_todos 테이블.
+// 할 일(Todo) 데이터 계층 — Supabase tb_todos / tb_todo_categories 테이블.
 // RLS가 created_by = auth.uid() 조건으로 걸려 있어, 로그인한 사용자 본인 행만 오간다.
 // 삭제는 하드 삭제가 아니라 deleted_yn 소프트 삭제이며(테이블 설계), 조회 시 항상 제외한다.
+//
+// 두 축은 서로 다른 개념이다:
+// - purpose(자기계발/취미): 고정된 두 갈래 — 화면의 좌/우 컬럼을 가른다.
+// - category(운동/자산/피부/…): 사용자가 자유롭게 추가·수정·삭제하는 태그.
 
 import { supabase } from "./supabase/client";
 
-export type Category = "need" | "want";
+export type Purpose = "need" | "want";
 export type Priority = "low" | "medium" | "high";
 export type Status = "pending" | "done";
 
 export type Todo = {
   id: number;
-  category: Category;
+  purpose: Purpose;
+  categoryId: number | null;
   title: string;
   dueDate: string | null; // YYYY-MM-DD
   priority: Priority;
@@ -23,7 +28,8 @@ export type Todo = {
 };
 
 export type NewTodo = {
-  category: Category;
+  purpose: Purpose;
+  categoryId?: number | null;
   title: string;
   dueDate?: string | null;
   priority?: Priority;
@@ -31,10 +37,21 @@ export type NewTodo = {
 };
 
 export type TodoDetailPatch = Partial<
-  Pick<Todo, "category" | "title" | "dueDate" | "priority" | "memo">
+  Pick<Todo, "purpose" | "categoryId" | "title" | "dueDate" | "priority" | "memo">
 >;
 
-export const CATEGORY_LABEL: Record<Category, string> = {
+export type TodoCategory = {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NewTodoCategory = {
+  name: string;
+};
+
+export const PURPOSE_LABEL: Record<Purpose, string> = {
   need: "자기계발",
   want: "취미",
 };
@@ -57,11 +74,12 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 const SELECT_COLUMNS =
-  "id, category, title, due_date, priority, status, memo, sort_order, completed_at, created_at, updated_at";
+  "id, purpose, category_id, title, due_date, priority, status, memo, sort_order, completed_at, created_at, updated_at";
 
 type TodoRow = {
   id: number;
-  category: Category;
+  purpose: Purpose;
+  category_id: number | null;
   title: string;
   due_date: string | null;
   priority: Priority;
@@ -76,7 +94,8 @@ type TodoRow = {
 function toTodo(row: TodoRow): Todo {
   return {
     id: row.id,
-    category: row.category,
+    purpose: row.purpose,
+    categoryId: row.category_id,
     title: row.title,
     dueDate: row.due_date,
     priority: row.priority,
@@ -109,7 +128,8 @@ export async function insertTodo(
   const { data, error } = await supabase
     .from("tb_todos")
     .insert({
-      category: input.category,
+      purpose: input.purpose,
+      category_id: input.categoryId ?? null,
       title: input.title.trim(),
       due_date: input.dueDate || null,
       priority: input.priority ?? "medium",
@@ -130,7 +150,8 @@ export async function updateTodoDetail(
   const { data, error } = await supabase
     .from("tb_todos")
     .update({
-      ...(patch.category !== undefined ? { category: patch.category } : {}),
+      ...(patch.purpose !== undefined ? { purpose: patch.purpose } : {}),
+      ...(patch.categoryId !== undefined ? { category_id: patch.categoryId } : {}),
       ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
       ...(patch.dueDate !== undefined ? { due_date: patch.dueDate || null } : {}),
       ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
@@ -167,7 +188,7 @@ export async function softDeleteTodo(id: number): Promise<void> {
   if (error) throw error;
 }
 
-/** 같은 카테고리 안에서 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장한다. */
+/** 같은 축(purpose) 안에서 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장한다. */
 export async function persistTodoOrder(orderedIds: number[]): Promise<void> {
   const results = await Promise.all(
     orderedIds.map((id, index) =>
@@ -187,6 +208,72 @@ export function sortTodosByPriority(todos: Todo[]): Todo[] {
   });
 }
 
-export function todosByCategory(todos: Todo[], category: Category): Todo[] {
-  return sortTodosByPriority(todos.filter((t) => t.category === category));
+export function todosByPurpose(todos: Todo[], purpose: Purpose): Todo[] {
+  return sortTodosByPriority(todos.filter((t) => t.purpose === purpose));
+}
+
+// ─────────────────────────────
+// 카테고리(운동/자산/피부/패션/생활/개발 …) — 자유롭게 추가·수정·삭제
+// ─────────────────────────────
+
+const CATEGORY_SELECT_COLUMNS = "id, name, created_at, updated_at";
+
+type TodoCategoryRow = {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function toTodoCategory(row: TodoCategoryRow): TodoCategory {
+  return {
+    id: row.id,
+    name: row.name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function fetchTodoCategories(): Promise<TodoCategory[]> {
+  const { data, error } = await supabase
+    .from("tb_todo_categories")
+    .select(CATEGORY_SELECT_COLUMNS)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(toTodoCategory);
+}
+
+export async function insertTodoCategory(
+  input: NewTodoCategory
+): Promise<TodoCategory> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw new Error("로그인이 필요해요.");
+
+  const { data, error } = await supabase
+    .from("tb_todo_categories")
+    .insert({ name: input.name.trim(), created_by: userData.user.id })
+    .select(CATEGORY_SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toTodoCategory(data);
+}
+
+export async function updateTodoCategoryRow(
+  id: number,
+  name: string
+): Promise<TodoCategory> {
+  const { data, error } = await supabase
+    .from("tb_todo_categories")
+    .update({ name: name.trim() })
+    .eq("id", id)
+    .select(CATEGORY_SELECT_COLUMNS)
+    .single();
+  if (error) throw error;
+  return toTodoCategory(data);
+}
+
+/** 카테고리를 삭제해도 그 카테고리를 쓰던 할 일은 지워지지 않는다(category_id가 null로 바뀔 뿐). */
+export async function deleteTodoCategoryRow(id: number): Promise<void> {
+  const { error } = await supabase.from("tb_todo_categories").delete().eq("id", id);
+  if (error) throw error;
 }

@@ -2,16 +2,24 @@
 
 import { useState } from "react";
 import {
-  CATEGORY_LABEL,
   PRIORITY_LABEL,
-  type Category,
+  PURPOSE_LABEL,
   type NewTodo,
   type Priority,
+  type Purpose,
+  type TodoCategory,
 } from "@/lib/todos";
 
-export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void }) {
+export default function TodoForm({
+  categories,
+  onAdd,
+}: {
+  categories: TodoCategory[];
+  onAdd: (input: NewTodo) => void;
+}) {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Category>("need");
+  const [purpose, setPurpose] = useState<Purpose>("need");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [dueDate, setDueDate] = useState("");
   const [memo, setMemo] = useState("");
@@ -20,9 +28,17 @@ export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void })
     e.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) return;
-    onAdd({ title: trimmed, category, priority, dueDate: dueDate || null, memo });
+    onAdd({
+      title: trimmed,
+      purpose,
+      categoryId: categoryId ? Number(categoryId) : null,
+      priority,
+      dueDate: dueDate || null,
+      memo,
+    });
     setTitle("");
-    setCategory("need");
+    setPurpose("need");
+    setCategoryId("");
     setPriority("medium");
     setDueDate("");
     setMemo("");
@@ -42,14 +58,29 @@ export default function TodoForm({ onAdd }: { onAdd: (input: NewTodo) => void })
         className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-text-tertiary"
       />
       <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value as Category)}
+        value={purpose}
+        onChange={(e) => setPurpose(e.target.value as Purpose)}
+        aria-label="구분"
+        className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
+      >
+        {(Object.keys(PURPOSE_LABEL) as Purpose[]).map((p) => (
+          <option key={p} value={p} className="bg-background">
+            {PURPOSE_LABEL[p]}
+          </option>
+        ))}
+      </select>
+      <select
+        value={categoryId}
+        onChange={(e) => setCategoryId(e.target.value)}
         aria-label="카테고리"
         className="rounded border border-border-subtle bg-transparent px-2 py-1.5 text-sm outline-none"
       >
-        {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
-          <option key={c} value={c} className="bg-background">
-            {CATEGORY_LABEL[c]}
+        <option value="" className="bg-background">
+          카테고리 없음
+        </option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id} className="bg-background">
+            {c.name}
           </option>
         ))}
       </select>

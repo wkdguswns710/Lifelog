@@ -8,8 +8,8 @@ import {
   setTodoStatus,
   softDeleteTodo,
   updateTodoDetail,
-  type Category,
   type NewTodo,
+  type Purpose,
   type Todo,
   type TodoDetailPatch,
 } from "@/lib/todos";
@@ -44,11 +44,11 @@ export function useTodos() {
     async (input: NewTodo) => {
       if (!input.title.trim()) return;
       try {
-        const sameCategory = todos.filter((t) => t.category === input.category);
+        const samePurpose = todos.filter((t) => t.purpose === input.purpose);
         const nextOrder =
-          sameCategory.length === 0
+          samePurpose.length === 0
             ? 0
-            : Math.max(...sameCategory.map((t) => t.sortOrder)) + 1;
+            : Math.max(...samePurpose.map((t) => t.sortOrder)) + 1;
         const created = await insertTodo(input, nextOrder);
         setTodos((prev) => [...prev, created]);
         setError(null);
@@ -97,16 +97,16 @@ export function useTodos() {
     }
   }, []);
 
-  /** 같은 카테고리 안에서 드래그로 새로 정렬된 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다. */
+  /** 같은 축(purpose) 안에서 드래그로 새로 정렬된 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다. */
   const reorder = useCallback(
-    async (category: Category, newOrderForCategory: Todo[]) => {
+    async (purpose: Purpose, newOrderForPurpose: Todo[]) => {
       const previous = todos;
       setTodos((prev) => {
-        const others = prev.filter((t) => t.category !== category);
-        return [...others, ...newOrderForCategory];
+        const others = prev.filter((t) => t.purpose !== purpose);
+        return [...others, ...newOrderForPurpose];
       });
       try {
-        await persistTodoOrder(newOrderForCategory.map((t) => t.id));
+        await persistTodoOrder(newOrderForPurpose.map((t) => t.id));
         setError(null);
       } catch (err) {
         setTodos(previous);
