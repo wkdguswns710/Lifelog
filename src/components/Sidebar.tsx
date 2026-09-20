@@ -19,6 +19,45 @@ export default function Sidebar() {
 
       <nav className="flex flex-col gap-1">
         {navItems.map((item) => {
+          if (item.children) {
+            const groupActive = item.children.some((child) =>
+              pathname.startsWith(child.href)
+            );
+
+            return (
+              <div key={item.label}>
+                <div
+                  className={`flex items-center gap-3 px-3 py-2 text-sm ${
+                    groupActive
+                      ? "font-medium text-foreground"
+                      : "text-text-secondary"
+                  }`}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  {item.label}
+                </div>
+                <div className="ml-3.5 flex flex-col gap-1 border-l border-border-subtle pl-3">
+                  {item.children.map((child) => {
+                    const active = pathname.startsWith(child.href);
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`rounded px-3 py-1.5 text-sm transition-colors duration-300 ${
+                          active
+                            ? "bg-background font-medium text-foreground"
+                            : "text-text-secondary hover:bg-background"
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           const active =
             item.href === "/"
               ? pathname === "/"

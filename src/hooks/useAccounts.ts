@@ -10,6 +10,7 @@ import {
   type Account,
   type NewAccount,
 } from "@/lib/accounts";
+import { withRetry } from "@/lib/retry";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "알 수 없는 오류가 발생했어요.";
@@ -22,7 +23,7 @@ export function useAccounts() {
 
   const reload = useCallback(async () => {
     try {
-      const rows = await fetchAccounts();
+      const rows = await withRetry(fetchAccounts);
       setAccounts(rows);
       setError(null);
     } catch (err) {

@@ -9,6 +9,7 @@ import {
   type NewTransaction,
   type Transaction,
 } from "@/lib/budget";
+import { withRetry } from "@/lib/retry";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "알 수 없는 오류가 발생했어요.";
@@ -21,7 +22,7 @@ export function useTransactions() {
 
   const reload = useCallback(async () => {
     try {
-      const rows = await fetchTransactions();
+      const rows = await withRetry(fetchTransactions);
       setTransactions(rows);
       setError(null);
     } catch (err) {

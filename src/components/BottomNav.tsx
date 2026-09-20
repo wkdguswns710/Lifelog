@@ -15,13 +15,17 @@ export default function BottomNav() {
       aria-label="주 메뉴"
     >
       {navItems.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const targetHref = item.children ? item.children[0].href : item.href;
+        const active = item.children
+          ? item.children.some((child) => pathname.startsWith(child.href))
+          : item.href === "/"
+            ? pathname === "/"
+            : pathname.startsWith(item.href);
 
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={item.label}
+            href={targetHref}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors duration-300 ${
               active ? "text-foreground" : "text-text-tertiary"
             }`}
