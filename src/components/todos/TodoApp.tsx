@@ -1,92 +1,48 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { useTodos } from "@/hooks/useTodos";
-import { sortTodos } from "@/lib/todos";
+import { CATEGORY_LABEL } from "@/lib/todos";
 import TodoForm from "./TodoForm";
-import TodoItem from "./TodoItem";
-
-type Filter = "all" | "active" | "done";
-
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "active", label: "진행중" },
-  { key: "done", label: "완료" },
-];
+import TodoColumn from "./TodoColumn";
 
 export default function TodoApp() {
-  const { todos, loaded, add, toggle, update, remove, clearCompleted } = useTodos();
-  const [filter, setFilter] = useState<Filter>("all");
-
-  const remaining = todos.filter((t) => !t.done).length;
-  const doneCount = todos.length - remaining;
-
-  const visible = useMemo(() => {
-    const filtered = todos.filter((t) =>
-      filter === "all" ? true : filter === "active" ? !t.done : t.done
-    );
-    return sortTodos(filtered);
-  }, [todos, filter]);
+  const { todos, loaded, error, add, toggle, update, remove, reorder } = useTodos();
 
   return (
     <div>
       <TodoForm onAdd={add} />
 
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex gap-1">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`rounded px-3 py-1 text-sm transition-colors duration-300 ${
-                filter === f.key
-                  ? "bg-surface-alt font-medium text-foreground"
-                  : "text-text-secondary hover:bg-surface-alt"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 text-xs text-text-tertiary">
-          <span>남은 일 {remaining}개</span>
-          {doneCount > 0 && (
-            <button
-              type="button"
-              onClick={clearCompleted}
-              className="rounded px-2 py-1 hover:bg-surface-alt hover:text-foreground"
-            >
-              완료 {doneCount}개 지우기
-            </button>
-          )}
-        </div>
-      </div>
+      {error && (
+        <p className="mb-4 rounded bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+          {error}
+        </p>
+      )}
 
       {!loaded ? (
         <p className="py-10 text-center text-sm text-text-tertiary">
           불러오는 중…
         </p>
-      ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border-strong py-12 text-center text-sm text-text-tertiary">
-          {todos.length === 0
-            ? "아직 할 일이 없어요. 위에서 하나 추가해보세요."
-            : filter === "done"
-              ? "완료한 일이 없어요."
-              : "진행 중인 일이 없어요. 다 끝냈네요! 🎉"}
-        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {visible.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={toggle}
-              onUpdate={update}
-              onRemove={remove}
-            />
-          ))}
-        </ul>
+        <div className="flex flex-col gap-6 md:flex-row md:items-start">
+          <TodoColumn
+            category="need"
+            label={CATEGORY_LABEL.need}
+            todos={todos}
+            onToggle={toggle}
+            onUpdate={update}
+            onRemove={remove}
+            onReorder={reorder}
+          />
+          <TodoColumn
+            category="want"
+            label={CATEGORY_LABEL.want}
+            todos={todos}
+            onToggle={toggle}
+            onUpdate={update}
+            onRemove={remove}
+            onReorder={reorder}
+          />
+        </div>
       )}
     </div>
   );

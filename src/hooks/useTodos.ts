@@ -2,55 +2,119 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createTodo,
-  loadTodos,
-  saveTodos,
+  fetchTodos,
+  insertTodo,
+  persistTodoOrder,
+  setTodoStatus,
+  softDeleteTodo,
+  updateTodoDetail,
+  type Category,
   type NewTodo,
   type Todo,
+  type TodoDetailPatch,
 } from "@/lib/todos";
+import { withRetry } from "@/lib/retry";
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "알 수 없는 오류가 발생했어요.";
+}
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 최초 마운트 시 localStorage에서 불러온다. (SSR/CSR 렌더 불일치 방지)
+  const reload = useCallback(async () => {
+    try {
+      const rows = await withRetry(fetchTodos);
+      setTodos(rows);
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
   useEffect(() => {
-    setTodos(loadTodos());
-    setLoaded(true);
-  }, []);
+    reload();
+  }, [reload]);
 
-  // 변경될 때마다 저장한다. 초기 로드 전에는 저장하지 않는다.
-  useEffect(() => {
-    if (loaded) saveTodos(todos);
-  }, [todos, loaded]);
-
-  const add = useCallback((input: NewTodo) => {
-    if (!input.title.trim()) return;
-    setTodos((prev) => [createTodo(input), ...prev]);
-  }, []);
-
-  const toggle = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-    );
-  }, []);
-
-  const update = useCallback(
-    (id: string, patch: Partial<Omit<Todo, "id" | "createdAt">>) => {
-      setTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...patch } : t))
-      );
+  const add = useCallback(
+    async (input: NewTodo) => {
+      if (!input.title.trim()) return;
+      try {
+        const sameCategory = todos.filter((t) => t.category === input.category);
+        const nextOrder =
+          sameCategory.length === 0
+            ? 0
+            : Math.max(...sameCategory.map((t) => t.sortOrder)) + 1;
+        const created = await insertTodo(input, nextOrder);
+        setTodos((prev) => [...prev, created]);
+        setError(null);
+      } catch (err) {
+        setError(errorMessage(err));
+      }
     },
-    []
+    [todos]
   );
 
-  const remove = useCallback((id: string) => {
-    setTodos((prev) => prev.filter((t) => t.id !== id));
+  const update = useCallback(async (id: number, patch: TodoDetailPatch) => {
+    try {
+      const updated = await updateTodoDetail(id, patch);
+      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }, []);
 
-  const clearCompleted = useCallback(() => {
-    setTodos((prev) => prev.filter((t) => !t.done));
+  const toggle = useCallback(
+    async (id: number) => {
+      const target = todos.find((t) => t.id === id);
+      if (!target) return;
+      try {
+        const updated = await setTodoStatus(
+          id,
+          target.status === "done" ? "pending" : "done"
+        );
+        setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+        setError(null);
+      } catch (err) {
+        setError(errorMessage(err));
+      }
+    },
+    [todos]
+  );
+
+  const remove = useCallback(async (id: number) => {
+    try {
+      await softDeleteTodo(id);
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }, []);
 
-  return { todos, loaded, add, toggle, update, remove, clearCompleted };
+  /** 같은 카테고리 안에서 드래그로 새로 정렬된 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다. */
+  const reorder = useCallback(
+    async (category: Category, newOrderForCategory: Todo[]) => {
+      const previous = todos;
+      setTodos((prev) => {
+        const others = prev.filter((t) => t.category !== category);
+        return [...others, ...newOrderForCategory];
+      });
+      try {
+        await persistTodoOrder(newOrderForCategory.map((t) => t.id));
+        setError(null);
+      } catch (err) {
+        setTodos(previous);
+        setError(errorMessage(err));
+      }
+    },
+    [todos]
+  );
+
+  return { todos, loaded, error, add, toggle, update, remove, reorder };
 }
