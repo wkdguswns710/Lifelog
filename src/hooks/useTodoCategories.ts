@@ -5,6 +5,7 @@ import {
   deleteTodoCategoryRow,
   fetchTodoCategories,
   insertTodoCategory,
+  persistTodoCategoryOrder,
   updateTodoCategoryRow,
   type NewTodoCategory,
   type TodoCategory,
@@ -36,28 +37,29 @@ export function useTodoCategories() {
     reload();
   }, [reload]);
 
-  const add = useCallback(async (input: NewTodoCategory) => {
-    if (!input.name.trim()) return;
-    try {
-      const created = await insertTodoCategory(input);
-      setCategories((prev) =>
-        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
-      );
-      setError(null);
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }, []);
+  const add = useCallback(
+    async (input: NewTodoCategory) => {
+      if (!input.name.trim()) return;
+      try {
+        const nextOrder =
+          categories.length === 0
+            ? 0
+            : Math.max(...categories.map((c) => c.sortOrder)) + 1;
+        const created = await insertTodoCategory(input, nextOrder);
+        setCategories((prev) => [...prev, created]);
+        setError(null);
+      } catch (err) {
+        setError(errorMessage(err));
+      }
+    },
+    [categories]
+  );
 
   const update = useCallback(async (id: number, name: string) => {
     if (!name.trim()) return;
     try {
       const updated = await updateTodoCategoryRow(id, name);
-      setCategories((prev) =>
-        prev
-          .map((c) => (c.id === id ? updated : c))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      );
+      setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
       setError(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -74,5 +76,21 @@ export function useTodoCategories() {
     }
   }, []);
 
-  return { categories, loaded, error, add, update, remove };
+  /** 드래그로 새로 정렬된 전체 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다. */
+  const reorder = useCallback(
+    async (newOrder: TodoCategory[]) => {
+      const previous = categories;
+      setCategories(newOrder);
+      try {
+        await persistTodoCategoryOrder(newOrder.map((c) => c.id));
+        setError(null);
+      } catch (err) {
+        setCategories(previous);
+        setError(errorMessage(err));
+      }
+    },
+    [categories]
+  );
+
+  return { categories, loaded, error, add, update, remove, reorder };
 }

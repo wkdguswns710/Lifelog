@@ -9,22 +9,39 @@ export default function TodoCategoryPanel({
   onAdd,
   onUpdate,
   onRemove,
+  onReorder,
 }: {
   categories: TodoCategory[];
   error?: string | null;
   onAdd: (name: string) => void;
   onUpdate: (id: number, name: string) => void;
   onRemove: (id: number) => void;
+  onReorder: (newOrder: TodoCategory[]) => void;
 }) {
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  const [dragId, setDragId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     onAdd(name);
     setName("");
+  }
+
+  function handleDrop(targetId: number) {
+    setDragOverId(null);
+    if (dragId === null || dragId === targetId) return;
+    const fromIndex = categories.findIndex((c) => c.id === dragId);
+    const toIndex = categories.findIndex((c) => c.id === targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const next = [...categories];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    onReorder(next);
+    setDragId(null);
   }
 
   return (
@@ -97,8 +114,34 @@ export default function TodoCategoryPanel({
             ) : (
               <li
                 key={c.id}
-                className="group flex items-center gap-2 rounded px-2 py-1.5 hover:bg-surface-alt"
+                draggable
+                onDragStart={() => setDragId(c.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverId !== c.id) setDragOverId(c.id);
+                }}
+                onDragLeave={() =>
+                  setDragOverId((prev) => (prev === c.id ? null : prev))
+                }
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(c.id);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDragOverId(null);
+                }}
+                className={`group flex items-center gap-2 rounded px-2 py-1.5 transition-colors duration-300 ${
+                  dragOverId === c.id ? "bg-surface-alt" : "hover:bg-surface-alt"
+                } ${dragId === c.id ? "opacity-40" : ""}`}
               >
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 cursor-grab select-none text-text-tertiary active:cursor-grabbing"
+                  title="드래그해서 순서 변경"
+                >
+                  ⠿
+                </span>
                 <span className="min-w-0 flex-1 truncate text-sm">{c.name}</span>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                   <button

@@ -8,7 +8,7 @@
 
 import { supabase } from "./supabase/client";
 
-export type Purpose = "need" | "want";
+export type Purpose = "need" | "want" | "life";
 export type Priority = "low" | "medium" | "high";
 export type Status = "pending" | "done";
 
@@ -43,6 +43,7 @@ export type TodoDetailPatch = Partial<
 export type TodoCategory = {
   id: number;
   name: string;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -53,6 +54,7 @@ export type NewTodoCategory = {
 
 export const PURPOSE_LABEL: Record<Purpose, string> = {
   need: "자기계발",
+  life: "생활",
   want: "취미",
 };
 
@@ -188,39 +190,42 @@ export async function softDeleteTodo(id: number): Promise<void> {
   if (error) throw error;
 }
 
-/** 같은 축(purpose) 안에서 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장한다. */
-export async function persistTodoOrder(orderedIds: number[]): Promise<void> {
+/**
+ * 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장하고, 동시에 구분(purpose)도 맞춘다.
+ * 같은 컬럼 안에서의 순서 변경뿐 아니라, 다른 컬럼으로 옮기는 드래그(예: 자기계발 → 생활)에도 쓰인다.
+ */
+export async function persistTodoPurposeAndOrder(
+  purpose: Purpose,
+  orderedIds: number[]
+): Promise<void> {
   const results = await Promise.all(
     orderedIds.map((id, index) =>
-      supabase.from("tb_todos").update({ sort_order: index }).eq("id", id)
+      supabase.from("tb_todos").update({ purpose, sort_order: index }).eq("id", id)
     )
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) throw failed.error;
 }
 
-/** 중요도가 높은 순 → 같은 중요도면 sort_order 순으로 정렬한다. */
-export function sortTodosByPriority(todos: Todo[]): Todo[] {
-  return [...todos].sort((a, b) => {
-    if (a.priority !== b.priority)
-      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-    return a.sortOrder - b.sortOrder;
-  });
+/** 사용자가 드래그로 정한 순서(sort_order) 그대로 정렬한다. 중요도는 자동 정렬에 관여하지 않고 배지로만 표시된다. */
+export function sortTodosByOrder(todos: Todo[]): Todo[] {
+  return [...todos].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export function todosByPurpose(todos: Todo[], purpose: Purpose): Todo[] {
-  return sortTodosByPriority(todos.filter((t) => t.purpose === purpose));
+  return sortTodosByOrder(todos.filter((t) => t.purpose === purpose));
 }
 
 // ─────────────────────────────
 // 카테고리(운동/자산/피부/패션/생활/개발 …) — 자유롭게 추가·수정·삭제
 // ─────────────────────────────
 
-const CATEGORY_SELECT_COLUMNS = "id, name, created_at, updated_at";
+const CATEGORY_SELECT_COLUMNS = "id, name, sort_order, created_at, updated_at";
 
 type TodoCategoryRow = {
   id: number;
   name: string;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };
@@ -229,6 +234,7 @@ function toTodoCategory(row: TodoCategoryRow): TodoCategory {
   return {
     id: row.id,
     name: row.name,
+    sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -238,20 +244,25 @@ export async function fetchTodoCategories(): Promise<TodoCategory[]> {
   const { data, error } = await supabase
     .from("tb_todo_categories")
     .select(CATEGORY_SELECT_COLUMNS)
-    .order("name", { ascending: true });
+    .order("sort_order", { ascending: true });
   if (error) throw error;
   return (data ?? []).map(toTodoCategory);
 }
 
 export async function insertTodoCategory(
-  input: NewTodoCategory
+  input: NewTodoCategory,
+  sortOrder: number
 ): Promise<TodoCategory> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) throw new Error("로그인이 필요해요.");
 
   const { data, error } = await supabase
     .from("tb_todo_categories")
-    .insert({ name: input.name.trim(), created_by: userData.user.id })
+    .insert({
+      name: input.name.trim(),
+      sort_order: sortOrder,
+      created_by: userData.user.id,
+    })
     .select(CATEGORY_SELECT_COLUMNS)
     .single();
   if (error) throw error;
@@ -276,4 +287,15 @@ export async function updateTodoCategoryRow(
 export async function deleteTodoCategoryRow(id: number): Promise<void> {
   const { error } = await supabase.from("tb_todo_categories").delete().eq("id", id);
   if (error) throw error;
+}
+
+/** 드래그로 정한 새 순서(id 배열)를 0부터 순서대로 저장한다. */
+export async function persistTodoCategoryOrder(orderedIds: number[]): Promise<void> {
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from("tb_todo_categories").update({ sort_order: index }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }

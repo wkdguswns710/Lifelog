@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchTodos,
   insertTodo,
-  persistTodoOrder,
+  persistTodoPurposeAndOrder,
   setTodoStatus,
   softDeleteTodo,
   updateTodoDetail,
@@ -97,16 +97,26 @@ export function useTodos() {
     }
   }, []);
 
-  /** 같은 축(purpose) 안에서 드래그로 새로 정렬된 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다. */
+  /**
+   * 드래그로 새로 정렬된 컬럼(purpose) 전체 목록을 받아 화면엔 즉시 반영하고, DB엔 뒤이어 저장한다.
+   * 같은 컬럼 안에서의 순서 변경은 물론, 다른 컬럼에서 넘어온 항목(구분이 바뀌는 경우)도 처리한다 —
+   * 넘어온 항목이 있으면 전달된 배열에 이미 포함돼 있고, purpose는 이 컬럼 값으로 맞춰 저장한다.
+   */
   const reorder = useCallback(
     async (purpose: Purpose, newOrderForPurpose: Todo[]) => {
       const previous = todos;
+      const reindexed = newOrderForPurpose.map((t, index) => ({
+        ...t,
+        purpose,
+        sortOrder: index,
+      }));
       setTodos((prev) => {
-        const others = prev.filter((t) => t.purpose !== purpose);
-        return [...others, ...newOrderForPurpose];
+        const movedIds = new Set(reindexed.map((t) => t.id));
+        const others = prev.filter((t) => !movedIds.has(t.id));
+        return [...others, ...reindexed];
       });
       try {
-        await persistTodoOrder(newOrderForPurpose.map((t) => t.id));
+        await persistTodoPurposeAndOrder(purpose, reindexed.map((t) => t.id));
         setError(null);
       } catch (err) {
         setTodos(previous);

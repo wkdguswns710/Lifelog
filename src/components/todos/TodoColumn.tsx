@@ -15,6 +15,8 @@ export default function TodoColumn({
   label,
   todos,
   categories,
+  dragId,
+  setDragId,
   onToggle,
   onUpdate,
   onRemove,
@@ -24,27 +26,49 @@ export default function TodoColumn({
   label: string;
   todos: Todo[];
   categories: TodoCategory[];
+  dragId: number | null;
+  setDragId: (id: number | null) => void;
   onToggle: (id: number) => void;
   onUpdate: (id: number, patch: TodoDetailPatch) => void;
   onRemove: (id: number) => void;
   onReorder: (purpose: Purpose, newOrder: Todo[]) => void;
 }) {
-  const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [columnDragOver, setColumnDragOver] = useState(false);
 
   const items = todosByPurpose(todos, purpose);
   const categoryName = (id: number | null) =>
     id == null ? null : categories.find((c) => c.id === id)?.name ?? null;
 
+  function withDragged(targetIndex: number) {
+    if (dragId === null) return null;
+    const draggedTodo = todos.find((t) => t.id === dragId);
+    if (!draggedTodo) return null;
+
+    const next = items.filter((t) => t.id !== dragId);
+    const insertAt = Math.min(targetIndex, next.length);
+    next.splice(insertAt, 0, draggedTodo);
+    return next;
+  }
+
   function handleDrop(targetId: number) {
     setDragOverId(null);
+    setColumnDragOver(false);
     if (dragId === null || dragId === targetId) return;
-    const fromIndex = items.findIndex((t) => t.id === dragId);
-    const toIndex = items.findIndex((t) => t.id === targetId);
-    if (fromIndex === -1 || toIndex === -1) return;
-    const next = [...items];
-    const [moved] = next.splice(fromIndex, 1);
-    next.splice(toIndex, 0, moved);
+    const targetIndex = items.findIndex((t) => t.id === targetId);
+    if (targetIndex === -1) return;
+    const next = withDragged(targetIndex);
+    if (!next) return;
+    onReorder(purpose, next);
+    setDragId(null);
+  }
+
+  function handleDropAtEnd() {
+    setDragOverId(null);
+    setColumnDragOver(false);
+    if (dragId === null) return;
+    const next = withDragged(items.length);
+    if (!next) return;
     onReorder(purpose, next);
     setDragId(null);
   }
@@ -57,11 +81,33 @@ export default function TodoColumn({
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border-strong py-10 text-center text-sm text-text-tertiary">
-          아직 없어요.
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!columnDragOver) setColumnDragOver(true);
+          }}
+          onDragLeave={() => setColumnDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleDropAtEnd();
+          }}
+          className={`rounded-xl border border-dashed py-10 text-center text-sm transition-colors duration-300 ${
+            columnDragOver
+              ? "border-accent bg-surface-alt text-text-secondary"
+              : "border-border-strong text-text-tertiary"
+          }`}
+        >
+          {columnDragOver ? "여기에 놓기" : "아직 없어요."}
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleDropAtEnd();
+          }}
+          className="flex flex-col gap-2"
+        >
           {items.map((todo) => (
             <TodoItem
               key={todo.id}
@@ -81,11 +127,13 @@ export default function TodoColumn({
               }
               onDrop={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 handleDrop(todo.id);
               }}
               onDragEnd={() => {
                 setDragId(null);
                 setDragOverId(null);
+                setColumnDragOver(false);
               }}
               onToggle={onToggle}
               onUpdate={onUpdate}

@@ -20,6 +20,7 @@ $$ language plpgsql;
 create table tb_todo_categories (
   id          bigserial primary key,
   name        text not null,
+  sort_order  integer not null default 0,    -- 사용자가 드래그로 정한 표시 순서
   created_at  timestamptz not null default now(),
   created_by  uuid not null references auth.users(id) on delete cascade,
   updated_at  timestamptz not null default now(),
@@ -30,6 +31,8 @@ create table tb_todo_categories (
 create trigger tb_todo_categories_set_updated_at
   before update on tb_todo_categories
   for each row execute function set_updated_at();
+
+create index on tb_todo_categories (created_by, sort_order);
 
 alter table tb_todo_categories enable row level security;
 
@@ -47,7 +50,7 @@ create policy "delete_own_todo_categories" on tb_todo_categories
 -- ─────────────────────────────
 create table tb_todos (
   id            bigserial primary key,                                          -- 시리얼 번호
-  purpose       text not null check (purpose in ('need', 'want')),              -- 구분(자기계발/취미) — 화면의 좌/우 컬럼
+  purpose       text not null check (purpose in ('need', 'want', 'life')),      -- 구분(자기계발/취미/생활) — 화면의 컬럼
   category_id   bigint references tb_todo_categories(id) on delete set null,    -- 카테고리(운동/자산/…) — 자유 태그
   title         text not null,                                                  -- 할일명
   due_date      date,                                                           -- 기한
