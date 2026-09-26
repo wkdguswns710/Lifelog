@@ -100,47 +100,72 @@ export default function TodoColumn({
           {columnDragOver ? "여기에 놓기" : "아직 없어요."}
         </div>
       ) : (
-        <ul
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            handleDropAtEnd();
-          }}
-          className="flex flex-col gap-2"
-        >
-          {items.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              categories={categories}
-              categoryName={categoryName(todo.categoryId)}
-              draggable
-              dragging={dragId === todo.id}
-              dragOver={dragOverId === todo.id}
-              onDragStart={() => setDragId(todo.id)}
+        <>
+          <ul
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDropAtEnd();
+            }}
+            className="flex flex-col gap-2"
+          >
+            {items.map((todo) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                categories={categories}
+                categoryName={categoryName(todo.categoryId)}
+                draggable
+                dragging={dragId === todo.id}
+                dragOver={dragOverId === todo.id}
+                onDragStart={() => setDragId(todo.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverId !== todo.id) setDragOverId(todo.id);
+                }}
+                onDragLeave={() =>
+                  setDragOverId((prev) => (prev === todo.id ? null : prev))
+                }
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDrop(todo.id);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setDragOverId(null);
+                  setColumnDragOver(false);
+                }}
+                onToggle={onToggle}
+                onUpdate={onUpdate}
+                onRemove={onRemove}
+              />
+            ))}
+          </ul>
+
+          {/* 목록 아래 여백이 거의 없어 마지막 항목 너머로 드롭할 공간이 없었다 —
+              드래그 중에만 나타나는 전용 드롭 영역으로 맨 아래 이동을 쉽게 한다. */}
+          {dragId !== null && dragId !== items[items.length - 1]?.id && (
+            <div
               onDragOver={(e) => {
                 e.preventDefault();
-                if (dragOverId !== todo.id) setDragOverId(todo.id);
+                if (!columnDragOver) setColumnDragOver(true);
               }}
-              onDragLeave={() =>
-                setDragOverId((prev) => (prev === todo.id ? null : prev))
-              }
+              onDragLeave={() => setColumnDragOver(false)}
               onDrop={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
-                handleDrop(todo.id);
+                handleDropAtEnd();
               }}
-              onDragEnd={() => {
-                setDragId(null);
-                setDragOverId(null);
-                setColumnDragOver(false);
-              }}
-              onToggle={onToggle}
-              onUpdate={onUpdate}
-              onRemove={onRemove}
-            />
-          ))}
-        </ul>
+              className={`mt-2 rounded-lg border border-dashed py-3 text-center text-xs transition-colors duration-300 ${
+                columnDragOver
+                  ? "border-accent bg-surface-alt text-text-secondary"
+                  : "border-border-subtle text-text-tertiary"
+              }`}
+            >
+              맨 아래로 옮기기
+            </div>
+          )}
+        </>
       )}
     </div>
   );

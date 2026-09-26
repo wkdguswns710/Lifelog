@@ -29,6 +29,7 @@ export default function TodoApp() {
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <TodoCategoryPanel
           categories={categoriesState.categories}
+          loaded={categoriesState.loaded}
           onAdd={(name) => categoriesState.add({ name })}
           onUpdate={categoriesState.update}
           onRemove={categoriesState.remove}

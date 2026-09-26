@@ -5,6 +5,7 @@ import type { TodoCategory } from "@/lib/todos";
 
 export default function TodoCategoryPanel({
   categories,
+  loaded,
   error,
   onAdd,
   onUpdate,
@@ -12,6 +13,7 @@ export default function TodoCategoryPanel({
   onReorder,
 }: {
   categories: TodoCategory[];
+  loaded: boolean;
   error?: string | null;
   onAdd: (name: string) => void;
   onUpdate: (id: number, name: string) => void;
@@ -75,7 +77,11 @@ export default function TodoCategoryPanel({
         </button>
       </form>
 
-      {categories.length === 0 ? (
+      {!loaded ? (
+        <p className="py-8 text-center text-xs text-text-tertiary">
+          불러오는 중…
+        </p>
+      ) : categories.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border-strong py-8 text-center text-xs text-text-tertiary">
           아직 카테고리가 없어요.
         </div>
