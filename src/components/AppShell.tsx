@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import MobileMenu from "@/components/MobileMenu";
+import BottomNav from "@/components/BottomNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useSession } from "@/hooks/useSession";
 
@@ -37,22 +37,23 @@ export default function AppShell({
     <div className="flex min-h-screen flex-col md:flex-row">
       {!hideChrome && (
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3 md:hidden">
-          <div className="flex items-center gap-1">
-            <MobileMenu />
-            <Link href="/" className="flex items-center gap-2 px-1">
-              <img src="/icon.svg" alt="" width={22} height={22} className="rounded-[5px]" />
-              <span className="text-base font-medium tracking-tight">
-                Lifelog
-              </span>
-            </Link>
-          </div>
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/icon.svg" alt="" width={22} height={22} className="rounded-[5px]" />
+            <span className="text-base font-medium tracking-tight">
+              Lifelog
+            </span>
+          </Link>
           <ThemeToggle compact />
         </div>
       )}
 
       <Sidebar />
 
-      <main className="flex-1 px-6 py-8 sm:px-10">{children}</main>
+      <main className="flex-1 px-6 py-8 pb-24 sm:px-10 md:pb-8">
+        {children}
+      </main>
+
+      <BottomNav />
     </div>
   );
 }
