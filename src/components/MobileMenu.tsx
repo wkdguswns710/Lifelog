@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/nav";
@@ -8,16 +8,34 @@ import { navItems } from "@/lib/nav";
 export default function MobileMenu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [openChildLabel, setOpenChildLabel] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  function closeAll() {
+    setOpen(false);
+    setOpenChildLabel(null);
+  }
 
   useEffect(() => {
-    setOpen(false);
+    closeAll();
   }, [pathname]);
 
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        closeAll();
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
   return (
-    <>
+    <div ref={rootRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? closeAll() : setOpen(true))}
         aria-label="전체 메뉴"
         aria-expanded={open}
         className="rounded p-1.5 text-foreground hover:bg-surface-alt"
@@ -29,23 +47,11 @@ export default function MobileMenu() {
         </svg>
       </button>
 
-      <div
-        onClick={() => setOpen(false)}
-        aria-hidden="true"
-        className={`fixed inset-0 z-40 bg-[rgba(128,128,128,0.65)] transition-opacity duration-300 md:hidden ${
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="전체 메뉴"
-        className={`fixed inset-x-0 top-0 z-50 max-h-[80vh] overflow-y-auto rounded-b-xl border-b border-border-strong bg-background transition-transform duration-300 md:hidden ${
-          open ? "translate-y-0" : "-translate-y-full"
-        }`}
-      >
-        <nav className="flex flex-col p-2">
+      {open && (
+        <nav
+          aria-label="전체 메뉴"
+          className="absolute left-0 top-full z-50 mt-2 w-44 rounded-lg border border-border-strong bg-background p-1 md:hidden"
+        >
           {navItems.map((item) => {
             const targetHref = item.children ? item.children[0].href : item.href;
             const active = item.children
@@ -53,38 +59,58 @@ export default function MobileMenu() {
               : item.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(item.href);
+            const childOpen = openChildLabel === item.label;
 
             return (
-              <div
-                key={item.label}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border-subtle px-2 py-2.5 last:border-b-0"
-              >
-                <Link
-                  href={targetHref}
-                  className={`flex items-center gap-2 rounded px-2 py-1 text-sm transition-colors duration-300 ${
-                    active
-                      ? "font-medium text-foreground"
-                      : "text-text-secondary hover:bg-surface-alt"
-                  }`}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  {item.label}
-                </Link>
+              <div key={item.label} className="relative">
+                {item.children ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenChildLabel((prev) => (prev === item.label ? null : item.label))
+                    }
+                    aria-expanded={childOpen}
+                    className={`flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-sm transition-colors duration-300 ${
+                      active || childOpen
+                        ? "bg-surface-alt font-medium text-foreground"
+                        : "text-text-secondary hover:bg-surface-alt"
+                    }`}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    <span className="flex-1">{item.label}</span>
+                    <span aria-hidden="true" className="text-xs text-text-tertiary">
+                      ▸
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    href={targetHref}
+                    className={`flex items-center gap-2 rounded px-2.5 py-2 text-sm transition-colors duration-300 ${
+                      active
+                        ? "bg-surface-alt font-medium text-foreground"
+                        : "text-text-secondary hover:bg-surface-alt"
+                    }`}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                )}
 
-                {item.children && (
-                  <div className="flex flex-1 flex-wrap justify-end gap-1.5">
+                {item.children && childOpen && (
+                  <div className="absolute left-full top-0 z-50 ml-1 w-36 rounded-lg border border-border-strong bg-background p-1">
                     {item.children.map((child) => {
                       const childActive = pathname.startsWith(child.href);
                       return (
                         <Link
                           key={child.href}
                           href={child.href}
-                          className={`rounded px-2.5 py-1 text-xs transition-colors duration-300 ${
+                          className={`flex items-center gap-2 rounded px-2.5 py-2 text-sm transition-colors duration-300 ${
                             childActive
                               ? "bg-surface-alt font-medium text-foreground"
-                              : "text-text-tertiary hover:bg-surface-alt"
+                              : "text-text-secondary hover:bg-surface-alt"
                           }`}
                         >
+                          <span className="text-base">{child.icon}</span>
                           {child.label}
                         </Link>
                       );
@@ -95,7 +121,7 @@ export default function MobileMenu() {
             );
           })}
         </nav>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
