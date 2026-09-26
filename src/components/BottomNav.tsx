@@ -36,7 +36,7 @@ export default function BottomNav() {
       />
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border-subtle bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-border-subtle bg-background pb-[env(safe-area-inset-bottom)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden"
         aria-label="주 메뉴"
       >
         {navItems.map((item) => {
@@ -55,7 +55,7 @@ export default function BottomNav() {
                   setOpenLabel((prev) => (prev === item.label ? null : item.label))
                 }
                 aria-expanded={openLabel === item.label}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors duration-300 ${
+                className={`flex w-16 shrink-0 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors duration-300 ${
                   active ? "text-foreground" : "text-text-tertiary"
                 }`}
               >
@@ -69,7 +69,7 @@ export default function BottomNav() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors duration-300 ${
+              className={`flex w-16 shrink-0 flex-col items-center gap-0.5 py-2 text-[11px] transition-colors duration-300 ${
                 active ? "text-foreground" : "text-text-tertiary"
               }`}
             >
