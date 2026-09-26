@@ -1,10 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "Lifelog",
   description: "내 일상을 한 곳에서 기록하고 관리하는 개인 대시보드",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Lifelog",
+  },
+  icons: {
+    icon: "/icon-512.png",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3E6AE1",
 };
 
 export default function RootLayout({

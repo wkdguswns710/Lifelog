@@ -56,7 +56,7 @@ export default function LoginForm() {
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm rounded-xl border border-border-subtle p-8">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <span className="text-2xl">🗂️</span>
+          <img src="/icon.svg" alt="Lifelog" width={40} height={40} className="rounded-[9px]" />
           <h1 className="text-lg font-medium tracking-tight">Lifelog</h1>
           <p className="text-sm text-text-tertiary">
             내 일상을 한 곳에서 기록하고 관리하세요.

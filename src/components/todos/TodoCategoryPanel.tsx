@@ -164,7 +164,14 @@ export default function TodoCategoryPanel({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onRemove(c.id)}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `"${c.name}" 카테고리를 삭제할까요? 이 카테고리를 쓰던 할 일은 지워지지 않고 카테고리만 없어져요.`
+                        )
+                      )
+                        onRemove(c.id);
+                    }}
                     aria-label="삭제"
                     title="삭제"
                     className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"

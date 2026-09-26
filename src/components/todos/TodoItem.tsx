@@ -170,7 +170,9 @@ export default function TodoItem({
           </button>
           <button
             type="button"
-            onClick={() => onRemove(todo.id)}
+            onClick={() => {
+              if (window.confirm(`"${todo.title}"을(를) 삭제할까요?`)) onRemove(todo.id);
+            }}
             aria-label="삭제"
             title="삭제"
             className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"

@@ -38,7 +38,7 @@ export default function AppShell({
       {!hideChrome && (
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3 md:hidden">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-lg">🗂️</span>
+            <img src="/icon.svg" alt="" width={22} height={22} className="rounded-[5px]" />
             <span className="text-base font-medium tracking-tight">
               Lifelog
             </span>
