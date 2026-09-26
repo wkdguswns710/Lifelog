@@ -17,6 +17,7 @@ export default function TodoColumn({
   todos,
   categories,
   dragId,
+  dragOffsetY,
   overTarget,
   startDrag,
   onToggle,
@@ -28,6 +29,7 @@ export default function TodoColumn({
   todos: Todo[];
   categories: TodoCategory[];
   dragId: number | null;
+  dragOffsetY: number;
   overTarget: DropTarget | null;
   startDrag: (e: React.PointerEvent, id: number) => void;
   onToggle: (id: number) => void;
@@ -70,6 +72,7 @@ export default function TodoColumn({
               categories={categories}
               categoryName={categoryName(todo.categoryId)}
               dragging={dragId === todo.id}
+              dragOffsetY={dragId === todo.id ? dragOffsetY : 0}
               dragOver={overTarget?.purpose === purpose && overTarget.beforeId === todo.id}
               startDrag={startDrag}
               onToggle={onToggle}

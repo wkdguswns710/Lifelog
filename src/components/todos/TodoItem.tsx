@@ -46,6 +46,7 @@ export default function TodoItem({
   categories,
   categoryName,
   dragging,
+  dragOffsetY,
   dragOver,
   startDrag,
   onToggle,
@@ -57,6 +58,7 @@ export default function TodoItem({
   categories: TodoCategory[];
   categoryName: string | null;
   dragging: boolean;
+  dragOffsetY: number;
   dragOver: boolean;
   startDrag: (e: React.PointerEvent, id: number) => void;
   onToggle: (id: number) => void;
@@ -87,15 +89,21 @@ export default function TodoItem({
     <li
       data-todo-id={todo.id}
       data-drop-purpose={purpose}
-      className={`group rounded-lg border transition-colors duration-300 ${
+      style={
+        dragging
+          ? { transform: `translateY(${dragOffsetY}px)`, position: "relative", zIndex: 10 }
+          : undefined
+      }
+      className={`group rounded-lg border bg-background transition-colors duration-300 ${
         dragOver ? "border-border-strong bg-surface-alt" : "border-border-subtle"
-      } ${dragging ? "opacity-40" : ""}`}
+      } ${dragging ? "opacity-90 shadow-[0_2px_8px_rgba(0,0,0,0.12)]" : ""}`}
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span
           aria-hidden="true"
           onPointerDown={(e) => startDrag(e, todo.id)}
-          className="shrink-0 cursor-grab touch-none select-none text-text-tertiary active:cursor-grabbing"
+          style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
+          className="-m-2 shrink-0 cursor-grab touch-none select-none p-2 text-text-tertiary active:cursor-grabbing"
           title="드래그해서 순서 변경"
         >
           ⠿

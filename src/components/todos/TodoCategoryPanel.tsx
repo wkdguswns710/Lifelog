@@ -25,7 +25,11 @@ export default function TodoCategoryPanel({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const getId = useCallback((c: TodoCategory) => c.id, []);
-  const { dragId, overId, startDrag } = usePointerReorder(categories, getId, onReorder);
+  const { dragId, overId, dragOffsetY, startDrag } = usePointerReorder(
+    categories,
+    getId,
+    onReorder
+  );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -109,14 +113,20 @@ export default function TodoCategoryPanel({
               <li
                 key={c.id}
                 data-drag-id={c.id}
-                className={`group flex items-center gap-2 rounded px-2 py-1.5 transition-colors duration-300 ${
+                style={
+                  dragId === c.id
+                    ? { transform: `translateY(${dragOffsetY}px)`, position: "relative", zIndex: 10 }
+                    : undefined
+                }
+                className={`group flex items-center gap-2 rounded bg-background px-2 py-1.5 transition-colors duration-300 ${
                   overId === c.id ? "bg-surface-alt" : "hover:bg-surface-alt"
-                } ${dragId === c.id ? "opacity-40" : ""}`}
+                } ${dragId === c.id ? "opacity-90 shadow-[0_2px_8px_rgba(0,0,0,0.12)]" : ""}`}
               >
                 <span
                   aria-hidden="true"
                   onPointerDown={(e) => startDrag(e, c.id)}
-                  className="shrink-0 cursor-grab touch-none select-none text-text-tertiary active:cursor-grabbing"
+                  style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
+                  className="-m-2 shrink-0 cursor-grab touch-none select-none p-2 text-text-tertiary active:cursor-grabbing"
                   title="드래그해서 순서 변경"
                 >
                   ⠿

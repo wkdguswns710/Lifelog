@@ -17,6 +17,8 @@ export function usePointerReorder<T>(
 ) {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overId, setOverId] = useState<number | null>(null);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const dragStartYRef = useRef(0);
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
@@ -27,6 +29,8 @@ export function usePointerReorder<T>(
 
   const startDrag = useCallback((e: React.PointerEvent, id: number) => {
     e.preventDefault();
+    dragStartYRef.current = e.clientY;
+    setDragOffsetY(0);
     setDragId(id);
   }, []);
 
@@ -34,6 +38,7 @@ export function usePointerReorder<T>(
     if (dragId === null) return;
 
     function handleMove(e: PointerEvent) {
+      setDragOffsetY(e.clientY - dragStartYRef.current);
       const el = document.elementFromPoint(e.clientX, e.clientY);
       const row = el?.closest<HTMLElement>("[data-drag-id]");
       const id = row ? Number(row.dataset.dragId) : null;
@@ -69,5 +74,5 @@ export function usePointerReorder<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragId, getId, onReorder, endDrag]);
 
-  return { dragId, overId, startDrag };
+  return { dragId, overId, dragOffsetY, startDrag };
 }

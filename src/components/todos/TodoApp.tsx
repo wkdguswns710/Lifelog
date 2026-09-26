@@ -18,6 +18,8 @@ export default function TodoApp() {
   const categoriesState = useTodoCategories();
   const [dragId, setDragId] = useState<number | null>(null);
   const [overTarget, setOverTarget] = useState<DropTarget | null>(null);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const dragStartYRef = useRef(0);
   const todosRef = useRef(todos);
   todosRef.current = todos;
 
@@ -25,6 +27,8 @@ export default function TodoApp() {
 
   const startDrag = useCallback((e: React.PointerEvent, id: number) => {
     e.preventDefault();
+    dragStartYRef.current = e.clientY;
+    setDragOffsetY(0);
     setDragId(id);
   }, []);
 
@@ -33,6 +37,7 @@ export default function TodoApp() {
     if (dragId === null) return;
 
     function handleMove(e: PointerEvent) {
+      setDragOffsetY(e.clientY - dragStartYRef.current);
       const el = document.elementFromPoint(e.clientX, e.clientY);
       const target = el?.closest<HTMLElement>("[data-drop-purpose]");
       if (!target) {
@@ -114,6 +119,7 @@ export default function TodoApp() {
                   todos={todos}
                   categories={categoriesState.categories}
                   dragId={dragId}
+                  dragOffsetY={dragOffsetY}
                   overTarget={overTarget}
                   startDrag={startDrag}
                   onToggle={toggle}
