@@ -116,30 +116,17 @@ export default function TodoItem({
           ⠿
         </span>
 
-        <input
-          type="checkbox"
-          checked={done}
-          onChange={() => onToggle(todo.id)}
-          aria-label={done ? "완료 취소" : "완료로 표시"}
-          className="size-4 shrink-0 cursor-pointer accent-accent"
-        />
-
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => onToggle(todo.id)}
+          onDoubleClick={() => setExpanded((v) => !v)}
           className={`min-w-0 flex-1 truncate text-left text-sm ${
             done ? "text-text-tertiary line-through" : ""
           }`}
-          title="클릭: 상세정보"
+          title="클릭: 완료 토글 · 더블클릭: 상세정보"
         >
           {todo.title}
         </button>
-
-        {categoryName && (
-          <span className="shrink-0 rounded bg-surface-alt px-2 py-0.5 text-xs text-text-secondary">
-            {categoryName}
-          </span>
-        )}
 
         {due && (
           <span
@@ -156,13 +143,29 @@ export default function TodoItem({
           </span>
         )}
 
-        <span
-          className={`shrink-0 rounded px-2 py-0.5 text-xs ${priorityStyle[todo.priority]}`}
-        >
-          {PRIORITY_LABEL[todo.priority]}
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          {categoryName && (
+            <span className="rounded bg-surface-alt px-2 py-0.5 text-xs text-text-secondary">
+              {categoryName}
+            </span>
+          )}
+          <span
+            className={`rounded px-2 py-0.5 text-xs ${priorityStyle[todo.priority]}`}
+          >
+            {PRIORITY_LABEL[todo.priority]}
+          </span>
+        </div>
 
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label="상세정보"
+            title="상세정보"
+            className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
+          >
+            ℹ️
+          </button>
           <button
             type="button"
             onClick={() => setEditing(true)}
