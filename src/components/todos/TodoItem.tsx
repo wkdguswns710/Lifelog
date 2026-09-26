@@ -156,37 +156,15 @@ export default function TodoItem({
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            aria-label="상세정보"
-            title="상세정보"
-            className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
-          >
-            ℹ️
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            aria-label="수정"
-            title="수정"
-            className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
-          >
-            ✏️
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`"${todo.title}"을(를) 삭제할까요?`)) onRemove(todo.id);
-            }}
-            aria-label="삭제"
-            title="삭제"
-            className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"
-          >
-            🗑️
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-label="상세정보"
+          title="상세정보"
+          className="shrink-0 rounded p-1 text-text-tertiary opacity-0 transition-opacity hover:bg-surface-alt hover:text-foreground group-hover:opacity-100 focus-within:opacity-100"
+        >
+          ℹ️
+        </button>
       </div>
 
       {expanded && (
@@ -195,10 +173,34 @@ export default function TodoItem({
             <span className="text-text-tertiary">메모</span>{" "}
             {todo.memo ? todo.memo : <span className="text-text-tertiary">없음</span>}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-text-tertiary">
-            <span>등록일 {formatDateTime(todo.createdAt)}</span>
-            <span>수정일 {formatDateTime(todo.updatedAt)}</span>
-            {done && <span>완료일 {formatDateTime(todo.completedAt)}</span>}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-text-tertiary">
+              <span>등록일 {formatDateTime(todo.createdAt)}</span>
+              <span>수정일 {formatDateTime(todo.updatedAt)}</span>
+              {done && <span>완료일 {formatDateTime(todo.completedAt)}</span>}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                aria-label="수정"
+                title="수정"
+                className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`"${todo.title}"을(를) 삭제할까요?`)) onRemove(todo.id);
+                }}
+                aria-label="삭제"
+                title="삭제"
+                className="rounded p-1 text-text-tertiary hover:bg-red-500/10 hover:text-red-500"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
         </div>
       )}
