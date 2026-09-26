@@ -115,7 +115,12 @@ export default function TodoCategoryPanel({
                 data-drag-id={c.id}
                 style={
                   dragId === c.id
-                    ? { transform: `translateY(${dragOffsetY}px)`, position: "relative", zIndex: 10 }
+                    ? {
+                        transform: `translateY(${dragOffsetY}px)`,
+                        position: "relative",
+                        zIndex: 10,
+                        pointerEvents: "none",
+                      }
                     : undefined
                 }
                 className={`group flex items-center gap-2 rounded bg-background px-2 py-1.5 transition-colors duration-300 ${

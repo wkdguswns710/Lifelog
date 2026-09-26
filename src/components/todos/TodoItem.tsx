@@ -91,7 +91,14 @@ export default function TodoItem({
       data-drop-purpose={purpose}
       style={
         dragging
-          ? { transform: `translateY(${dragOffsetY}px)`, position: "relative", zIndex: 10 }
+          ? {
+              transform: `translateY(${dragOffsetY}px)`,
+              position: "relative",
+              zIndex: 10,
+              // 손끝을 따라오는 항목 자신이 elementFromPoint에 계속 잡혀서(항상 최상단),
+              // 드롭 위치 판정이 매번 "자기 자신"으로 나와 맨 끝으로 튕기던 원인이었다.
+              pointerEvents: "none",
+            }
           : undefined
       }
       className={`group rounded-lg border bg-background transition-colors duration-300 ${
