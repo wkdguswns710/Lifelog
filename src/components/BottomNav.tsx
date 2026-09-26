@@ -33,7 +33,7 @@ export default function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border-subtle bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       aria-label="주 메뉴"
     >
-      {navItems.map((item) => {
+      {navItems.map((item, index) => {
         const active = item.children
           ? item.children.some((child) => pathname.startsWith(child.href))
           : item.href === "/"
@@ -42,10 +42,19 @@ export default function BottomNav() {
 
         if (item.children) {
           const open = openLabel === item.label;
+          // 화면 양 끝 탭은 가운데 정렬하면 드롭다운이 뷰포트 밖으로 잘려서, 끝쪽 탭은 그쪽 가장자리에 붙인다.
+          const menuAlign =
+            index === 0
+              ? "left-0"
+              : index === navItems.length - 1
+                ? "right-0"
+                : "left-1/2 -translate-x-1/2";
           return (
             <div key={item.label} className="relative flex flex-1">
               {open && (
-                <div className="absolute bottom-full left-1/2 mb-2 flex -translate-x-1/2 flex-col gap-0.5 whitespace-nowrap rounded-lg border border-border-strong bg-background p-1">
+                <div
+                  className={`absolute bottom-full ${menuAlign} mb-2 flex flex-col gap-0.5 whitespace-nowrap rounded-lg border border-border-strong bg-background p-1`}
+                >
                   {item.children.map((child) => {
                     const childActive = pathname.startsWith(child.href);
                     return (
