@@ -118,12 +118,11 @@ export default function TodoItem({
 
         <button
           type="button"
-          onClick={() => onToggle(todo.id)}
-          onDoubleClick={() => setExpanded((v) => !v)}
+          onClick={() => setExpanded((v) => !v)}
           className={`min-w-0 flex-1 truncate text-left text-sm ${
             done ? "text-text-tertiary line-through" : ""
           }`}
-          title="클릭: 완료 토글 · 더블클릭: 상세정보"
+          title="클릭: 상세정보"
         >
           {todo.title}
         </button>
@@ -156,30 +155,25 @@ export default function TodoItem({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-label="상세정보"
-          title="상세정보"
-          className="shrink-0 rounded p-1 text-text-tertiary opacity-0 transition-opacity hover:bg-surface-alt hover:text-foreground group-hover:opacity-100 focus-within:opacity-100"
-        >
-          ℹ️
-        </button>
       </div>
 
       {expanded && (
         <div className="flex flex-col gap-1 border-t border-border-subtle px-3 py-2.5 text-xs text-text-secondary">
-          <div>
-            <span className="text-text-tertiary">메모</span>{" "}
-            {todo.memo ? todo.memo : <span className="text-text-tertiary">없음</span>}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-text-tertiary">
-              <span>등록일 {formatDateTime(todo.createdAt)}</span>
-              <span>수정일 {formatDateTime(todo.updatedAt)}</span>
-              {done && <span>완료일 {formatDateTime(todo.completedAt)}</span>}
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <span className="text-text-tertiary">메모</span>{" "}
+              {todo.memo ? todo.memo : <span className="text-text-tertiary">없음</span>}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onToggle(todo.id)}
+                aria-label={done ? "완료 취소" : "완료로 표시"}
+                title={done ? "완료 취소" : "완료로 표시"}
+                className="rounded p-1 text-text-tertiary hover:bg-surface-alt hover:text-foreground"
+              >
+                {done ? "↩️" : "✅"}
+              </button>
               <button
                 type="button"
                 onClick={() => setEditing(true)}
@@ -201,6 +195,11 @@ export default function TodoItem({
                 🗑️
               </button>
             </div>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-text-tertiary">
+            <span>등록일 {formatDateTime(todo.createdAt)}</span>
+            <span>수정일 {formatDateTime(todo.updatedAt)}</span>
+            {done && <span>완료일 {formatDateTime(todo.completedAt)}</span>}
           </div>
         </div>
       )}
