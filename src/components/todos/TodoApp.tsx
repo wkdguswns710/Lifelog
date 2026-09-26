@@ -93,15 +93,6 @@ export default function TodoApp() {
       )}
 
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        <TodoCategoryPanel
-          categories={categoriesState.categories}
-          loaded={categoriesState.loaded}
-          onAdd={(name) => categoriesState.add({ name })}
-          onUpdate={categoriesState.update}
-          onRemove={categoriesState.remove}
-          onReorder={categoriesState.reorder}
-        />
-
         <div className="min-w-0 flex-1">
           <TodoForm categories={categoriesState.categories} onAdd={add} />
 
@@ -130,6 +121,15 @@ export default function TodoApp() {
             </div>
           )}
         </div>
+
+        <TodoCategoryPanel
+          categories={categoriesState.categories}
+          loaded={categoriesState.loaded}
+          onAdd={(name) => categoriesState.add({ name })}
+          onUpdate={categoriesState.update}
+          onRemove={categoriesState.remove}
+          onReorder={categoriesState.reorder}
+        />
       </div>
     </div>
   );
