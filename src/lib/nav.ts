@@ -48,6 +48,7 @@ export const navItems: NavItem[] = [
     description: "게임 등 취미 기록",
     children: [
       { href: "/hobby/game", label: "게임", icon: "🎮", description: "플레이한 게임 기록" },
+      { href: "/hobby/anime", label: "애니", icon: "🎬", description: "본 애니메이션 기록" },
     ],
   },
   {
