@@ -8,7 +8,7 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { href: "/", label: "대시보드", icon: "🏠", description: "오늘 한눈에 보기" },
-  { href: "/todos", label: "체크리스트", icon: "✅", description: "오늘/최근 해야 할 일" },
+  { href: "/todos", label: "할 일", icon: "✅", description: "오늘/최근 해야 할 일" },
   {
     href: "/career/dev",
     label: "업무",
