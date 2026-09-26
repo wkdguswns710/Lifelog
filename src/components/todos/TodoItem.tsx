@@ -42,31 +42,23 @@ function formatDateTime(iso: string | null): string {
 
 export default function TodoItem({
   todo,
+  purpose,
   categories,
   categoryName,
-  draggable,
   dragging,
   dragOver,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onDragEnd,
+  startDrag,
   onToggle,
   onUpdate,
   onRemove,
 }: {
   todo: Todo;
+  purpose: Purpose;
   categories: TodoCategory[];
   categoryName: string | null;
-  draggable: boolean;
   dragging: boolean;
   dragOver: boolean;
-  onDragStart: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
-  onDrop: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  startDrag: (e: React.PointerEvent, id: number) => void;
   onToggle: (id: number) => void;
   onUpdate: (id: number, patch: TodoDetailPatch) => void;
   onRemove: (id: number) => void;
@@ -93,12 +85,8 @@ export default function TodoItem({
 
   return (
     <li
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      data-todo-id={todo.id}
+      data-drop-purpose={purpose}
       className={`group rounded-lg border transition-colors duration-300 ${
         dragOver ? "border-border-strong bg-surface-alt" : "border-border-subtle"
       } ${dragging ? "opacity-40" : ""}`}
@@ -106,7 +94,8 @@ export default function TodoItem({
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span
           aria-hidden="true"
-          className="shrink-0 cursor-grab select-none text-text-tertiary active:cursor-grabbing"
+          onPointerDown={(e) => startDrag(e, todo.id)}
+          className="shrink-0 cursor-grab touch-none select-none text-text-tertiary active:cursor-grabbing"
           title="드래그해서 순서 변경"
         >
           ⠿
